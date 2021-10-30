@@ -4,6 +4,13 @@ GitHub search key: `extension:java filename:*test* language:Java selenium`
 
 The search has been performed in `code`, rather than `repositories` or `commits`, so that GitHub inspects sources instead of documents or commit messages.
 
+Notice that, for practical reasons, the test cases have not been collected all in once. Therefore, one may worry about whether the search operation produces different results in different moments. It can be easily tested, instead, that the search operation is mostly idempotent w.r.t. the order in which test cases are shown. Results rarely show again the same test case, but this is not an issue:
+
+- Test cases already collected can be discarded since the project and the test suite folder to which they belong are recorded as well;
+- Not-relevant test cases are just evaluated twice.
+
+The other threat to the validity of the collection task is the chance that new tests are added, deleted or modified during the collection task. This facet cannot be directly controlled, but it has been considered acceptable since encountered commit messages were written years ago.
+
 Fragility is not measured through the number of modifications that occur after AUT has changed; it is measured as the number of modifications that occur, independently from the AUT. In this way, the definition comprises perfective, corrective and preventive modifications. In any case, this doesn't mean that every modification is considered relevant: for example, style changes have been ignored. What decides if a change is important or not is its frequency of occurence: if a task like organizing imports happens in < 0.1% of times, it is just a matter of style; however, measuring it is a way to not make assumptions.
 
 A test case is a test file in this document, not just a test function.
@@ -38,3 +45,7 @@ Unfortunately in most projects there is just one all-in-one commit for test case
 By inspecting the modifications developers do, so that a certain initial snippet s0 is modified into s1, it can be observed that s1 quite frequently exploits the same selector or assertion of s0. This means that developers sometimes don't try to improve them by selecting or asserting other correlated properties, but they tend to **adapt** the test code for compliance with the AUT. The consequence is the propagation of fragility: since the change was necessary at least once, it may be necessary again in the future.
 
 Interesting how developers of the project `ffhu22/Web-CI-Build` tried several techniques to improve stability of the test case `qa_assignment/selenium/uitest/UserFlowRegisterTest.java`, as emerges from its commit messages. Among these attempts there are: build failing if test failing, using of default timeouts, keeping essential tests, taking screenshots and refreshing the page.
+
+XPath fragility is not solved by extracting its literal string representation into a parametric macro: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
+
+Another attempt to solve fragility by surrounding snippets with wait statements for fixed time lapse: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
