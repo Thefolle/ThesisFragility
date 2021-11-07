@@ -4,10 +4,10 @@ GitHub search key: `extension:java filename:*test* language:Java selenium`
 
 The search has been performed in `code`, rather than `repositories` or `commits`, so that GitHub inspects sources instead of documents or commit messages.
 
-Notice that, for practical reasons, the test cases have not been collected all in once. Therefore, one may worry about whether the search operation produces different results in different moments. It can be easily tested, instead, that the search operation is mostly idempotent w.r.t. the order in which test cases are shown. Results rarely show again the same test case, but this is not an issue:
+Notice that, for practical reasons, the test cases have not been collected all in once. Therefore, one may wander about whether the search operation produces different results in different moments. This is not an issue since:
 
 - Test cases already collected can be discarded since the project and the test suite folder to which they belong are recorded as well;
-- Not-relevant test cases are just evaluated twice.
+- Non-relevant test cases are just evaluated twice.
 
 The other threat to the validity of the collection task is the chance that new tests are added, deleted or modified during the collection task. This facet cannot be directly controlled, but it has been considered acceptable since encountered commit messages were written years ago.
 
