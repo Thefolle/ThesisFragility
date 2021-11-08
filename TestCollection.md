@@ -49,3 +49,5 @@ Interesting how developers of the project `ffhu22/Web-CI-Build` tried several te
 XPath fragility is not solved by extracting its literal string representation into a parametric macro: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
 
 Another attempt to solve fragility by surrounding snippets with wait statements for fixed time lapse: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
+
+Here is an example of test suite management: `Vijayasok89/selenium`, `java/client/test/com/thoughtworks/selenium/WebDriverSeleniumTestSuite.java`.
