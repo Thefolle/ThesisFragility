@@ -13,10 +13,12 @@ Nowadays most AUTs are single-page.
 
 ## Wait for fixed time lapse
 
+This statement typically assumes the form of a `Thread.sleep` call.
+
 This statement should be converted to a wait for condition, for diverse reasons:
 
-- The AUT is typically event-based, so a wait for condition decreases the waiting time to the minimum admissible time lapse;
-- On the contrary, the waiting time may not be enough.
+- The AUT is typically event-based, so a wait for condition decreases the waiting time to the minimum admissible time lapse; the waiting time is the same in case the test fails;
+- The waiting time may not be enough.
 
 These two opposite forces cause a continuous modification of the timeout.
 
