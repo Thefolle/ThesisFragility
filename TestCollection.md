@@ -40,11 +40,11 @@ There are more fine-grained caveats however. A given adaptive modification may o
 
 ## Analysis
 
-Unfortunately in most projects there is just one all-in-one commit for test cases; this doesn't imply that developers didn't find any fragility issue during the maintenance, quite that they have not been traced on GitHub.
+Unfortunately in most projects there is just an all-in-one commit per test cae; this doesn't imply that developers didn't find any fragility issue during the maintenance, quite that they have not been traced on GitHub.
 
 By inspecting the modifications developers do, so that a certain initial snippet s0 is modified into s1, it can be observed that s1 quite frequently exploits the same selector or assertion of s0. This means that developers sometimes don't try to improve them by selecting or asserting other correlated properties, but they tend to **adapt** the test code for compliance with the AUT. The consequence is the propagation of fragility: since the change was necessary at least once, it may be necessary again in the future.
 
-Interesting how developers of the project `ffhu22/Web-CI-Build` tried several techniques to improve stability of the test case `qa_assignment/selenium/uitest/UserFlowRegisterTest.java`, as emerges from its commit messages. Among these attempts there are: build failing if test failing, using of default timeouts, keeping essential tests, taking screenshots and refreshing the page.
+Interesting how developers of the project `ffhu22/Web-CI-Build` tried several techniques to improve stability of the test case `qa_assignment/selenium/uitest/UserFlowRegisterTest.java`, as emerges from its commit messages. Among these attempts there are: build failing if test failing, using default timeouts, keeping essential tests, taking screenshots and refreshing the working web page.
 
 XPath fragility is not solved by extracting its literal string representation into a parametric macro: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
 
