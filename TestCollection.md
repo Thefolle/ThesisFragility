@@ -11,7 +11,7 @@ Notice that, for practical reasons, the test cases have not been collected all i
 
 The other threat to the validity of the collection task is the chance that new tests are added, deleted or modified during the collection task. This facet cannot be directly controlled, but it has been considered acceptable since encountered commit messages were written years ago.
 
-Fragility is not measured through the number of modifications that occur after AUT has changed; it is measured as the number of modifications that occur, independently from the AUT. In this way, the definition comprises perfective, corrective and preventive modifications. In any case, this doesn't mean that every modification is considered relevant: for example, style changes have been ignored. What decides if a change is important or not is its frequency of occurence: if a task like organizing imports happens in < 0.1% of times, it is just a matter of style; however, measuring it is a way to not make assumptions.
+
 
 A test case is a test file in this document, not just a test function.
 
