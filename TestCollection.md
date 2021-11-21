@@ -11,8 +11,6 @@ Notice that, for practical reasons, the test cases have not been collected all i
 
 The other threat to the validity of the collection task is the chance that new tests are added, deleted or modified during the collection task. This facet cannot be directly controlled, but it has been considered acceptable since encountered commit messages were written years ago.
 
-
-
 A test case is a test file in this document, not just a test function.
 
 Workflow:
