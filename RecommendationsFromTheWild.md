@@ -197,6 +197,12 @@ Some test are made intentionally fragile in order to protect some areas of code 
 
 [The Magento testing standard](https://github.com/MykolaAkhtyrtsevDev/magento2/wiki/Magento-Automated-Testing-Standard)
 
+## Recommendation W.12
+
+Another more commonly encountered form of brittleness is in graphical user interfaces that make invalid assumptions. For example, a user may be running on a low resolution display, and the software will open a window too large to fit the display. Another common problem is expressed when a user uses a color scheme other than the default, causing text to be rendered in the same color as the background, or a user uses a font other than the default, which won't fit in the allowed space and cuts off instructions and labels.
+
+[Software brittleness](https://en.wikipedia.org/wiki/Software_brittleness)
+
 ---
 [Order of preference of selectors](https://www.selenium.dev/documentation/webdriver/locating_elements/#tips-on-using-selectors)
 

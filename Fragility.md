@@ -3,7 +3,7 @@
 This document first defines fragility within the scope of the thesis; then, through a top-down approach, several issues pertaining fragility have been brainstormed and evaluated.
 Note that the research method followed here is a-priori, so it is opposite to the data mining technique which instead tries to infer general laws from mere data.
 
-Software engineering borrows the concept of fragility from the materials science, like also rigidity, viscosity and so on. As commonly known, an object can respond in two ways when it gets subjected to some force: it morphs by bending itself, or it tries to keep a shape. In this last case, the object may either endure as it is against the force, or break in pieces; the more fragile the body is, the more breaking points occur. In computer science, the software devoted to test an application, a.k.a. test cases, behave similarly: as soon as the Application Under Test, AUT in short, gets changed by a developer, test cases may also need to be corrected accordingly; this phenomenom is due to the fragility of test cases. The more fragile a test case is, the more defects are induced by a modification in the AUT.
+Software engineering borrows the concept of fragility from metalworking, like also rigidity, viscosity and so on. As commonly known, an object can respond in two ways when it gets subjected to some force: it morphs by bending itself, or it tries to keep a shape. In this last case, the object may either endure as it is against the force, or break in pieces; the more fragile the body is, the more breaking points occur. In computer science, the software devoted to test an application, a.k.a. test cases, behave similarly: as soon as the Application Under Test, AUT in short, gets changed by a developer, test cases may also need to be corrected accordingly; this phenomenom is due to the fragility of test cases. The more fragile a test case is, the more defects are induced by a modification in the AUT.
 Within the scope of this study, one step further has been done by widening the definition of fragility, as described beneath.
 
 Let S be an arbitrary snippet of code, like a statement or a test case.
@@ -36,3 +36,7 @@ Several heuristics about writing test cases don't depend neither from the underl
 A test case typically emulates a use case. As stated by paper 3, paragraph 5.2, the use cases of an Android app slightly change over time. This may be relevant for subsequent work.
 
 Can I treat fragility as belonging to the absolute scale, or should I assign categorical measures?
+
+[Antifragility through microservices](https://developers.redhat.com/blog/2016/07/20/from-fragile-to-antifragile-software)
+
+This study investigates fragility of test cases rather than about the AUT or its documentation.
