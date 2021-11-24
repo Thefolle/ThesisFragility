@@ -1,6 +1,6 @@
 # Fragility
 
-This document first defines fragility within the scope of the thesis; then, through a top-down approach, several issues pertaining fragility have been brainstormed and evaluated.
+This chapter first defines fragility within the scope of the thesis; then, through a top-down approach, several issues pertaining fragility have been brainstormed and evaluated.
 Note that the research method followed here is a-priori, so it is opposite to the data mining technique which instead tries to infer general laws from mere data.
 
 Software engineering borrows the concept of fragility from metalworking, like also rigidity, viscosity and so on. As commonly known, an object can respond in two ways when it gets subjected to some force: it morphs by bending itself, or it tries to keep a shape. In this last case, the object may either endure as it is against the force, or break in pieces; the more fragile the body is, the more breaking points occur. In computer science, the software devoted to test an application, a.k.a. test cases, behave similarly: as soon as the Application Under Test, AUT in short, gets changed by a developer, test cases may also need to be corrected accordingly; this phenomenom is due to the fragility of test cases. The more fragile a test case is, the more defects are induced by a modification in the AUT.

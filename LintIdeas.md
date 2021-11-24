@@ -20,3 +20,23 @@ Regarding restyling analysis, the lint may suggest the creation of a method when
 When the developer tries to split the test case in logical parts, the lint may suggest either to add an explanatory comment ahead of the snippet, or to create a method with a pertinent name and Java-doc. The lint may also indicate that a test case should mirror a use case, so it should be divided in meaningful parts.
 
 Regarding recommendation W.3, the lint may suggest some id names or discourage others.
+
+## Steps to develop the linter
+
+Steps:
+
+1. git clone <https://github.com/microsoft/vscode-extension-samples.git>;
+2. open lsp-sample folder;
+3. Follow the instructions in the README.
+
+## Design
+
+VSCode provides two ways to implement an extension:
+
+- Standalone: the extension just registers events and processes a given file;
+- LSP: the extension is split in a client that interacts with the editor and forwards data to a server which processes them.
+
+The second solution is more scalable than the first, since the computation workload is devoted to a server which is a separate process. Moreover, since LSP is standard, the server would work for any IDE that adheres to the standard.
+Unfortunately, the LSP environment is quite recent, indeed it provides no compatible module to parse java or javascript files.
+
+Therefore, the current implementation of the lint is standalone. In future, the lint should be migrated to LSP, as soon as modules like `vscode-languageserver-java` or similar get published.
