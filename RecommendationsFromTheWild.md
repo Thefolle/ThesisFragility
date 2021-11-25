@@ -36,7 +36,7 @@ You should use id locators, because:
 
 ## Recommendation W.3
 
-### ID and Class Naming
+### 1. ID and Class Naming
 
 Use meaningful or generic ID and class names.
 
@@ -66,7 +66,7 @@ Generic names are simply a fallback for elements that have no particular or no m
 .alt {}
 ```
 
-### ID and Class Name Style
+### 2. ID and Class Name Style
 
 Use ID and class names that are as short as possible but as long as necessary.
 
@@ -74,7 +74,7 @@ Try to convey what an ID or class is about while being as brief as possible.
 
 Using ID and class names this way contributes to acceptable levels of understandability and code efficiency.
 
-### ID and Class Name Delimiters
+### 3. ID and Class Name Delimiters
 
 Separate words in ID and class names by a hyphen.
 
@@ -90,37 +90,37 @@ It's not unusual \[answer to previous question, n.d.r.\]. IDs tend to aid greatl
 
 ## Recommendation W.5
 
-### 4.1 At the very least, write API (component) testing
+### 1. At the very least, write API (component) testing
 
 TL;DR: Most projects just don't have any automated testing due to short timetables or often the 'testing project' ran out of control and was abandoned. For that reason, prioritize and start with API testing which is the easiest way to write and provides more coverage than unit testing (you may even craft API tests without code using tools like Postman). Afterward, should you have more resources and time, continue with advanced test types like unit testing, DB testing, performance testing, etc
 
 Otherwise: You may spend long days on writing unit tests to find out that you got only 20% system coverage
 
-### 4.2 Include 3 parts in each test name
+### 2. Include 3 parts in each test name
 
 TL;DR: Make the test speak at the requirements level so it's self-explanatory also to QA engineers and developers who are not familiar with the code internals. State in the test name what is being tested (unit under test), under what circumstances, and what is the expected result
 
 Otherwise: A deployment just failed, a test named “Add product” failed. Does this tell you what exactly is malfunctioning?
 
-### 4.3 Structure tests by the AAA pattern
+### 3. Structure tests by the AAA pattern
 
 TL;DR: Structure your tests with 3 well-separated sections: Arrange, Act & Assert (AAA). The first part includes the test setup, then the execution of the unit under test, and finally the assertion phase. Following this structure guarantees that the reader spends no brain CPU on understanding the test plan
 
 Otherwise: Not only you spend long daily hours on understanding the main code, but now also what should have been the simple part of the day (testing) stretches your brain
 
-### 4.4 Detect code issues with a linter
+### 4. Detect code issues with a linter
 
 TL;DR: Use a code linter to check the basic quality and detect anti-patterns early. Run it before any test and add it as a pre-commit git-hook to minimize the time needed to review and correct any issue. Also check Section 3 on Code Style Practices
 
 Otherwise: You may let pass some anti-pattern and possible vulnerable code to your production environment.
 
-### 4.5 Avoid global test fixtures and seeds, add data per-test
+### 5. Avoid global test fixtures and seeds, add data per-test
 
 TL;DR: To prevent test coupling and easily reason about the test flow, each test should add and act on its own set of DB rows. Whenever a test needs to pull or assume the existence of some DB data - it must explicitly add that data and avoid mutating any other records
 
 Otherwise: Consider a scenario where deployment is aborted due to failing tests, team is now going to spend precious investigation time that ends in a sad conclusion: the system works well, the tests however interfere with each other and break the build
 
-### 4.7 Tag your tests
+### 6. Tag your tests
 
 TL;DR: Different tests must run on different scenarios: quick smoke, IO-less, tests should run when a developer saves or commits a file, full end-to-end tests usually run when a new pull request is submitted, etc. This can be achieved by tagging tests with keywords like #cold #api #sanity so you can grep with your testing harness and invoke the desired subset. For example, this is how you would invoke only the sanity test group with Mocha: mocha --grep 'sanity'
 

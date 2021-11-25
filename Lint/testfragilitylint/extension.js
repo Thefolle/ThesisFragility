@@ -6,7 +6,8 @@ const vscode = require('vscode');
 //let jsLexer = new lexr.Tokenizer("Javascript"); this lexer has scope bugs
 //const lexer4js = require('lexer4js') // doesn't recognize the require keyword
 //const lexer = new lexer4js.Lexer()
-const acorn = require('acorn-node')
+const acorn = require('acorn-node');
+const { TokenType, tokTypes } = require('acorn');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -30,7 +31,7 @@ function activate(context) {
 		vscode.window.showInformationMessage('Aslam Alaikum!');
 	});
 
-	let disposable2 = vscode.commands.registerCommand('testfragilitylint.showTimestamp', function() {
+	let disposable2 = vscode.commands.registerCommand('testfragilitylint.showTimestamp', function () {
 		vscode.window.showWarningMessage(Date.now().toString())
 	})
 
@@ -60,36 +61,145 @@ function activate(context) {
  * @param {vscode.DiagnosticCollection} collection
  */
 function updateDiagnostics(document, collection) {
-	let lexer = acorn.tokenizer(document.getText())
-
-	let token = lexer.getToken()
-	let a = ""
-	let i = 0
-	while (token && i < 8) {
-		a += JSON.stringify(token.type)
-		
-		i++
-		token = lexer.getToken()
-	}
-
 	if (document) {
-		collection.set(document.uri, [{
-			code: '',
-			message: `token: ${a}`,
-			range: new vscode.Range(new vscode.Position(3, 4), new vscode.Position(3, 10)),
-			severity: vscode.DiagnosticSeverity.Error,
-			source: '',
-			relatedInformation: [
-				new vscode.DiagnosticRelatedInformation(new vscode.Location(document.uri, new vscode.Range(new vscode.Position(1, 8), new vscode.Position(1, 9))), 'first assignment to `x`')
-			]
-		}]);
+		let lexer = acorn.tokenizer(document.getText())
+
+		let tokenHistory = [] // the first token is the newest one
+		tokenHistory.unshift(lexer.getToken())
+/* 		tokenHistory.unshift(lexer.getToken())
+		tokenHistory.unshift(lexer.getToken()) */
+		// if (tokenHistory.map(token => token.type.label).includes(tokTypes.eof.label)) {
+		// 	/* The file is too small to lint */
+		// 	collection.clear()
+		// 	console.log("No")
+		// 	return
+		// }
+
+		let diagnostics = []
+		let token = tokenHistory[0]
+		let firstToLastToken
+		let secondToLastToken
+		while (token.type.label !== tokTypes.eof.label) {
+			console.log(token)
+			if (token.type.label === tokTypes.string.label) {
+				if (isAbsoluteXPath(token.value)) {
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							token,
+							'Recom. W.2',
+							`Id locators are primarily more robust than XPaths; they are also cleaner and faster.`
+						)
+					)
+
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							token,
+							'Recom. W.2',
+							`If an id locator is not applicable, convert the absolute XPath ${token.value} to a more robust relative XPath.`
+						)
+					)
+				} else if (isIdLocator(token.value) && isNotSeparatedByHyphen(token.value)) {
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							token,
+							'Recom. W.3.3',
+							`Identifiers should contain words separated by hyphens for better understandability and scannability.`
+						)
+					)
+				}/*  else if (firstToLastToken && secondToLastToken && isTestCaseName(secondToLastToken.value, firstToLastToken.value, token.value)) {
+					console.log("Entered")
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							token,
+							'Recom. W.5.2',
+							`A test name should contain three parts: what is under test, in which condition and the expected result.`
+						)
+					)
+				} */
+			}
+
+			tokenHistory.pop()
+			tokenHistory.unshift(lexer.getToken())
+			secondToLastToken = firstToLastToken
+			firstToLastToken = token
+			token = tokenHistory[0]
+		}
+
+		console.log("finished")
+		console.log(diagnostics)
+
+		if (diagnostics.length > 0)
+			collection.set(document.uri, diagnostics);
+		else collection.clear()
 	} else {
 		collection.clear();
 	}
 }
 
+function buildDiagnostic(document, token, code, message) {
+	let diagnostic = new vscode.Diagnostic(
+		new vscode.Range(document.positionAt(token.start), document.positionAt(token.end)),
+		message,
+		vscode.DiagnosticSeverity.Warning
+		)
+
+	diagnostic.code = code
+	diagnostic.source = 'Fragility linter'
+	/* diagnostic.relatedInformation =  relatedInformation: [
+		new vscode.DiagnosticRelatedInformation(
+			new vscode.Location(
+				document.uri,
+				new vscode.Range(new vscode.Position(1, 8), new vscode.Position(1, 9))
+			),
+			'first assignment to `x`'
+		)
+	] */
+
+	return diagnostic
+}
+
+function isXPath(token) {
+	if (typeof token === 'string')
+		return token.includes("/");
+	return null;
+}
+
+function isAbsoluteXPath(token) {
+	if (typeof token === 'string')
+		return token.charAt(0) == '/' && token.charAt(1) != '/';
+	return null;
+}
+
+function isIdLocator(token) {
+	if (typeof token === 'string')
+		return token.charAt(0) == '#' || token.startsWith("id=");
+	return null;
+}
+
+function isCssLocator(token) {
+	if (typeof token === 'string')
+		return token.startsWith("css=");
+	return null;
+}
+
+function isNotSeparatedByHyphen(token) {
+	if (typeof token === 'string')
+		return token.search(/_|&|,|;/) !== -1;
+	return null;
+}
+
+function isTestCaseName(secondToLastToken, firstToLastToken, token) {
+	if (typeof secondToLastToken === 'string' && typeof firstToLastToken === 'string' && typeof token === 'string')
+		return secondToLastToken == 'it' && firstToLastToken == '('
+	return null;
+}
+
 // this method is called when your extension is deactivated
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
