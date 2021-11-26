@@ -7,7 +7,8 @@ const vscode = require('vscode');
 //const lexer4js = require('lexer4js') // doesn't recognize the require keyword
 //const lexer = new lexer4js.Lexer()
 const acorn = require('acorn-node');
-const { TokenType, tokTypes } = require('acorn');
+const { TokenType, tokTypes, Token } = require('acorn');
+const { recommendations } = require('./recommendations')
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -66,71 +67,41 @@ function updateDiagnostics(document, collection) {
 
 		let tokenHistory = [] // the first token is the newest one
 		tokenHistory.unshift(lexer.getToken())
-/* 		tokenHistory.unshift(lexer.getToken())
-		tokenHistory.unshift(lexer.getToken()) */
-		// if (tokenHistory.map(token => token.type.label).includes(tokTypes.eof.label)) {
-		// 	/* The file is too small to lint */
-		// 	collection.clear()
-		// 	console.log("No")
-		// 	return
-		// }
 
 		let diagnostics = []
-		let token = tokenHistory[0]
-		let firstToLastToken
-		let secondToLastToken
-		while (token.type.label !== tokTypes.eof.label) {
-			console.log(token)
-			if (token.type.label === tokTypes.string.label) {
-				if (isAbsoluteXPath(token.value)) {
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							token,
-							'Recom. W.2',
-							`Id locators are primarily more robust than XPaths; they are also cleaner and faster.`
-						)
-					)
+		let isAtBeginning = true
+		let isAtEnd = false
 
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							token,
-							'Recom. W.2',
-							`If an id locator is not applicable, convert the absolute XPath ${token.value} to a more robust relative XPath.`
-						)
-					)
-				} else if (isIdLocator(token.value) && isNotSeparatedByHyphen(token.value)) {
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							token,
-							'Recom. W.3.3',
-							`Identifiers should contain words separated by hyphens for better understandability and scannability.`
-						)
-					)
-				}/*  else if (firstToLastToken && secondToLastToken && isTestCaseName(secondToLastToken.value, firstToLastToken.value, token.value)) {
-					console.log("Entered")
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							token,
-							'Recom. W.5.2',
-							`A test name should contain three parts: what is under test, in which condition and the expected result.`
-						)
-					)
-				} */
-			}
+		while (tokenHistory.length > 0) {
+			console.log(tokenHistory[0])
 
-			tokenHistory.pop()
-			tokenHistory.unshift(lexer.getToken())
-			secondToLastToken = firstToLastToken
-			firstToLastToken = token
-			token = tokenHistory[0]
+			/* Check violations against the recommendations; in affirmative case, show them to the user */
+			recommendations.forEach(recommendation => {
+				if (recommendation.contract(tokenHistory.map(token => token.value || token.type.label)) // sometimes the token's value is stored elsewhere
+				) {
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							tokenHistory[0],
+							recommendation.id,
+							recommendation.message(tokenHistory[0].value || tokenHistory[0].type.label)
+						)
+					)
+				}
+			}) 
+
+			/* Treat tokenHistory as a buffer which is initially empty,
+			 then gets a certain maximum size, and finally returns to be empty when scan is at end */
+			if (!isAtEnd) tokenHistory.unshift(lexer.getToken())
+
+			if (tokenHistory.length == 4) isAtBeginning = false
+			if (tokenHistory[0].type.label == tokTypes.eof.label) isAtEnd = true
+
+			if (!isAtBeginning && !isAtEnd) tokenHistory.pop()
+			if (isAtEnd) tokenHistory.shift()
 		}
 
-		console.log("finished")
-		console.log(diagnostics)
+		console.log("Diagnostics have been collected.")
 
 		if (diagnostics.length > 0)
 			collection.set(document.uri, diagnostics);
