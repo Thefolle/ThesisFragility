@@ -45,3 +45,5 @@ The linter is compliant with the following lifecycle:
 
 - It scans the current test file through a lexer that returns each token, one by one;
 - 
+
+Regarding recommendation R.W.8.0, you could just inspect the test suite to search for the existance of integration tests.

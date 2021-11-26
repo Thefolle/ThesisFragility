@@ -25,6 +25,12 @@ Some recommendations coming from the wild are apparently contrasting:
 
 Since multiple rules may declare opposite statements to each other, they have been checked also against external consistency. Regarding the methodology, recommendations have been evaluated incrementally in order to easier the process: given the corpus of already-scanned and consistent recommendations, a further rule is compared with them and admitted in case of coherence.
 
+The intermediate result has been filtered by fragility-pertinent rules: guidelines that establish a recommendation just for the sake of clearness, for instance, have been dropped. Instead, those good practices that enforce clearness or other properties for the name of fragility have been kept.
+
+Each source may contain different recommendations, as well as a recommendation may be extracted from multiple sources.
+
+Unfortunately, the provided recommendations have a variable degree of ease of implementation. This may lower the tool's capabilities, as described in the pertinent chapter.
+
 *You can infer which are the properties fragility depends from by automatically inspecting the thesis: any word ending with -ility or -ness is a good candidate*.
 
 Although performing data mining by collecting test cases modifications along their history is a reasonable and direct source of information, other channels have been considered. Indeed, developers feel the implicit need to establish rules that hopefully guarantee stronger robustness and try to follow them. These rules can be still found in the wild, but under the form of wikis (as called on GitHub) rather than code. Additionally, authoritative organizations like Google, the Selenium team, Node.js and so on have published guidelines on the Net with the same purpose over the years. Taking into account what developers experienced about fragility so that to write down their own guidelines enrich the range of rules that a tool is capable to enforce or suggest; the developer would rely upon a tool that summarizes the knowledge of hundreds of peers from the wild.

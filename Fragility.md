@@ -27,7 +27,7 @@ Fragility can be classified according to its nature:
 
 ## Draft
 
-p = p(LOC)
+p = p(LOC, effort)
 
 As stated in paper 3, paragraph 2.3, which in turn cites Ralph (2008), one strategy to produce a taxonomy is personal experience. Therefore, here are some common evidencies that may cause fragility:
 
