@@ -7,8 +7,10 @@ const vscode = require('vscode');
 //const lexer4js = require('lexer4js') // doesn't recognize the require keyword
 //const lexer = new lexer4js.Lexer()
 const acorn = require('acorn-node');
-const { TokenType, tokTypes, Token } = require('acorn');
-const { recommendations } = require('./recommendations')
+const walker = require('acorn-node/walk')
+const { TokenType, tokTypes, Token, Parser, tokContexts, defaultOptions } = require('acorn');
+const { recommendations } = require('./recommendations');
+const { isFunctionTypeNode, visitLexicalEnvironment, visitNode } = require('typescript');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -63,43 +65,46 @@ function activate(context) {
  */
 function updateDiagnostics(document, collection) {
 	if (document) {
-		let lexer = acorn.tokenizer(document.getText())
-
-		let tokenHistory = [] // the first token is the newest one
-		tokenHistory.unshift(lexer.getToken())
-
 		let diagnostics = []
-		let isAtBeginning = true
-		let isAtEnd = false
 
-		while (tokenHistory.length > 0) {
-			console.log(tokenHistory[0])
+		let root = acorn.Parser.parse(document.getText())
 
-			/* Check violations against the recommendations; in affirmative case, show them to the user */
-			recommendations.forEach(recommendation => {
-				if (recommendation.contract(tokenHistory.map(token => token.value || token.type.label)) // sometimes the token's value is stored elsewhere
-				) {
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							tokenHistory[0],
-							recommendation.id,
-							recommendation.message(tokenHistory[0].value || tokenHistory[0].type.label)
+		let globalVariableIdentifiers = []
+		let context = {}
+
+		let customVisitor = walker.make({
+			VariableDeclaration: (node, state, c) => {
+				node.declarations.forEach(declaration => globalVariableIdentifiers.push(declaration.id.name))
+			},
+			CallExpression: (node, state, c) => {
+				if (node.callee.name == 'it') {
+					let testCaseString = document.getText(new vscode.Range(document.positionAt(node.start), document.positionAt(node.end)))
+					console.log(testCaseString)
+					context.globalVariableIdentifiers = globalVariableIdentifiers
+
+					let result = recommendations[0].contract(testCaseString, context)
+					console.log(JSON.stringify(result))
+					result.forEach(diagnosedNode => {
+						diagnostics.push(
+							buildDiagnostic(
+								document,
+								diagnosedNode.start + node.start,
+								diagnosedNode.end + node.start,
+								recommendations[0].id,
+								recommendations[0].message(diagnosedNode.name)
+							)
 						)
-					)
+					})
+				} else {
+					/* the node is a test suite */
+					c(node.callee, state)
+					node.arguments.forEach(argument => c(argument, state))
 				}
-			}) 
+				// should not continue here: see global variable collection algorithm
+			}
+		})
 
-			/* Treat tokenHistory as a buffer which is initially empty,
-			 then gets a certain maximum size, and finally returns to be empty when scan is at end */
-			if (!isAtEnd) tokenHistory.unshift(lexer.getToken())
-
-			if (tokenHistory.length == 4) isAtBeginning = false
-			if (tokenHistory[0].type.label == tokTypes.eof.label) isAtEnd = true
-
-			if (!isAtBeginning && !isAtEnd) tokenHistory.pop()
-			if (isAtEnd) tokenHistory.shift()
-		}
+		walker.recursive(root, null, customVisitor, walker.base)
 
 		console.log("Diagnostics have been collected.")
 
@@ -111,9 +116,9 @@ function updateDiagnostics(document, collection) {
 	}
 }
 
-function buildDiagnostic(document, token, code, message) {
+function buildDiagnostic(document, start, end, code, message) {
 	let diagnostic = new vscode.Diagnostic(
-		new vscode.Range(document.positionAt(token.start), document.positionAt(token.end)),
+		new vscode.Range(document.positionAt(start), document.positionAt(end)),
 		message,
 		vscode.DiagnosticSeverity.Warning
 		)
