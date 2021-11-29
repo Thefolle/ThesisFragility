@@ -82,7 +82,7 @@ When testers write a new test case or when the test suite is getting big, they t
 
 Source: S.W.5.2
 
-Arranging each test case in a standard way, no matters which one, saves effort since the plan of test cases is uniform. Saving effort, in turn, decreases the probability that the test case gets abandoned.
+Arranging each test case in a standard way, like the proposed one, saves effort since the plan of test cases is uniform along test suites. Saving effort, in turn, decreases the probability that the test case gets abandoned.
 
 ## Recommendation R.W.8.3
 

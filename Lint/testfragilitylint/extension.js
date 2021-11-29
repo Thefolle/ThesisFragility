@@ -69,29 +69,62 @@ function updateDiagnostics(document, collection) {
 
 		let root = acorn.Parser.parse(document.getText())
 
-		let globalVariableIdentifiers = []
-		let context = {}
+		// the parse history, like declared global variables
+		let context = {
+			globalVariableIdentifiers: []
+		}
 
+		// TODO: collect global variables separately to support hoisting
 		let customVisitor = walker.make({
 			VariableDeclaration: (node, state, c) => {
-				node.declarations.forEach(declaration => globalVariableIdentifiers.push(declaration.id.name))
+				node.declarations.forEach(declaration => context.globalVariableIdentifiers.push(declaration.id.name))
+				
+				node.declarations.forEach(declaration => c(declaration, state))
 			},
 			CallExpression: (node, state, c) => {
 				if (node.callee.name == 'it') {
 					let testCaseString = document.getText(new vscode.Range(document.positionAt(node.start), document.positionAt(node.end)))
-					console.log(testCaseString)
-					context.globalVariableIdentifiers = globalVariableIdentifiers
+					//console.log(testCaseString)
+					context.globalVariableIdentifiers = context.globalVariableIdentifiers
 
-					let result = recommendations[0].contract(testCaseString, context)
-					console.log(JSON.stringify(result))
+					let result = recommendations[2].contract(testCaseString, context)
+					//console.log(JSON.stringify(result))
 					result.forEach(diagnosedNode => {
 						diagnostics.push(
 							buildDiagnostic(
 								document,
 								diagnosedNode.start + node.start,
 								diagnosedNode.end + node.start,
-								recommendations[0].id,
-								recommendations[0].message(diagnosedNode.name)
+								recommendations[2].id,
+								recommendations[2].message(diagnosedNode.name)
+							)
+						)
+					})
+
+					result = recommendations[3].contract(testCaseString, context)
+					//console.log(JSON.stringify(result))
+					result.forEach(diagnosedNode => {
+						diagnostics.push(
+							buildDiagnostic(
+								document,
+								diagnosedNode.start + node.start,
+								diagnosedNode.end + node.start,
+								recommendations[3].id,
+								recommendations[3].message(diagnosedNode.name)
+							)
+						)
+					})
+
+					result = recommendations[4].contract(testCaseString, context)
+					//console.log(JSON.stringify(result))
+					result.forEach(diagnosedNode => {
+						diagnostics.push(
+							buildDiagnostic(
+								document,
+								diagnosedNode.start + node.start,
+								diagnosedNode.end + node.start,
+								recommendations[4].id,
+								recommendations[4].message(diagnosedNode.name)
 							)
 						)
 					})
@@ -101,6 +134,33 @@ function updateDiagnostics(document, collection) {
 					node.arguments.forEach(argument => c(argument, state))
 				}
 				// should not continue here: see global variable collection algorithm
+			},
+			Literal: (node, state, c) => {
+				let result = recommendations[0].contract(node.value)
+				result.forEach(diagnosedNode => { // no more than one item is ever available
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							diagnosedNode.start + node.start,
+							diagnosedNode.end + node.start + 3, // apostrofy commas included
+							recommendations[0].id,
+							recommendations[0].message(diagnosedNode.value)
+						)
+					)
+				})
+
+				result = recommendations[1].contract(node.value)
+				result.forEach(diagnosedNode => { // no more than one item is ever available
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							diagnosedNode.start + node.start,
+							diagnosedNode.end + node.start + 3, // apostrofy commas included
+							recommendations[1].id,
+							recommendations[1].message(diagnosedNode.value)
+						)
+					)
+				})
 			}
 		})
 

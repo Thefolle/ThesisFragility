@@ -3,7 +3,7 @@
 "jifjei"
 "iosjfe"
 
-let c
+const c = 'a'
 
 //1. unit under test
 describe('Products Service', () => {
@@ -13,11 +13,11 @@ describe('Products Service', () => {
       it('Wh', () => {
         // test setup
         let b, a
-        c = 1
-        c = 2
         d = 4
-		    console.log('a')
-        console.log('b')
+		    console.log(c)
+        let e
+        assertTrue(true)
+        console.log(e)
       });
     });
   });
