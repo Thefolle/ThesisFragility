@@ -19,7 +19,7 @@ const recommendations = [
             *   This heuristic may produce false positives: 
             *   let pathInTheDisk = "/mnt/c/etc/bin"
             */
-            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/') {
+            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
                 result.push({
                     start: 0,
                     end: literal.length - 1,
@@ -47,7 +47,7 @@ const recommendations = [
             *   This heuristic may produce false positives: 
             *   let pathInTheDisk = "/mnt/c/etc/bin"
             */
-            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/') {
+            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
                 result.push({
                     start: 0,
                     end: literal.length - 1,
@@ -170,6 +170,30 @@ const recommendations = [
             walker.recursive(testCase, null, customVisitor, walker.base)
 
             //console.log(globalVariableReferences)
+
+            return result
+        }
+    },
+    {
+        id: "TODO",
+        message: (tokenValue) => "Use of fixed-time wait to synchronize actions. Instead, use a condition-based wait.",
+        contract: (testCaseString, context) => {
+            let testCase = acorn.Parser.parse(testCaseString)
+            let result = []
+
+            let customVisitor = walker.make({
+                CallExpression: (node, state, c) => {
+                    if (node.callee.name == 'setTimeout') {
+                        result.push(node.callee)
+                    } else {
+                        /* The node is not a setTimeout */
+                        c(node.callee, state)
+                        node.arguments.forEach(argument => c(argument, state))
+                    }
+                }
+            })
+            
+            walker.recursive(testCase, null, customVisitor, walker.base)
 
             return result
         }

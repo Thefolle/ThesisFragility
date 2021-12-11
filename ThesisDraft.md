@@ -43,10 +43,7 @@ It is natural wondering about why locators by id are more robust than their xpat
 
 ## Progettazione del tool: cosa si vuole fare, quale tecnologia (UML grafici)
 
-Fragility can be faced from different point of views: probing, analyzing, predicting and repairing. The tool developed and proposed here can be classified as a predictor, since it suggests an alternative to the choice of the developer which in turn has greater probability to break in future. Indeed, while repair-based tools make test suites adapt to a changing AUT (i.e., test cases are resilient), predictors shield test cases by enhancing their robustness.
-The effectiveness of the proposed tool is shown in the figure underneath as the `robust` curve:
 
-![Effectiveness of fragility countermeasures](<DiffExamples\FragilityCountermeasuresEffectiveness.png>)
 
 ## Conclusione: abbiamo fatto questo, cosa abbiamo risolto e cosa non. Spunti futuri
 

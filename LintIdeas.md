@@ -21,14 +21,6 @@ When the developer tries to split the test case in logical parts, the lint may s
 
 Regarding recommendation W.3, the lint may suggest some id names or discourage others.
 
-## Steps to develop the linter
-
-Steps:
-
-1. git clone <https://github.com/microsoft/vscode-extension-samples.git>;
-2. open lsp-sample folder;
-3. Follow the instructions in the README.
-
 ## Design
 
 VSCode provides two ways to implement an extension:
@@ -40,10 +32,5 @@ The second solution is more scalable than the first, since the computation workl
 Unfortunately, the LSP environment is quite recent, indeed it provides no compatible module to parse java or javascript files.
 
 Therefore, the current implementation of the lint is standalone. In future, the lint should be migrated to LSP, as soon as modules like `vscode-languageserver-java` or similar get published.
-
-The linter is compliant with the following lifecycle:
-
-- It scans the current test file through a lexer that returns each token, one by one;
-- 
 
 Regarding recommendation R.W.8.0, you could just inspect the test suite to search for the existance of integration tests.

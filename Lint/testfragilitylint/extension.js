@@ -77,7 +77,16 @@ function updateDiagnostics(document, collection) {
 		// TODO: collect global variables separately to support hoisting
 		let customVisitor = walker.make({
 			VariableDeclaration: (node, state, c) => {
-				node.declarations.forEach(declaration => context.globalVariableIdentifiers.push(declaration.id.name))
+				/* collect global variables */
+				node.declarations.forEach(declaration => {
+					if (declaration.init && declaration.init.callee && declaration.init.callee.name == 'require') {
+						/* Don't push */
+					} else if (declaration.id.name == 'driver') {
+						/* Don't push */
+					} else {
+						context.globalVariableIdentifiers.push(declaration.id.name)
+					}
+				})
 				
 				node.declarations.forEach(declaration => c(declaration, state))
 			},
@@ -85,7 +94,6 @@ function updateDiagnostics(document, collection) {
 				if (node.callee.name == 'it') {
 					let testCaseString = document.getText(new vscode.Range(document.positionAt(node.start), document.positionAt(node.end)))
 					//console.log(testCaseString)
-					context.globalVariableIdentifiers = context.globalVariableIdentifiers
 
 					let result = recommendations[2].contract(testCaseString, context)
 					//console.log(JSON.stringify(result))
@@ -125,6 +133,20 @@ function updateDiagnostics(document, collection) {
 								diagnosedNode.end + node.start,
 								recommendations[4].id,
 								recommendations[4].message(diagnosedNode.name)
+							)
+						)
+					})
+
+					result = recommendations[5].contract(testCaseString, context)
+					//console.log(JSON.stringify(result))
+					result.forEach(diagnosedNode => {
+						diagnostics.push(
+							buildDiagnostic(
+								document,
+								diagnosedNode.start + node.start,
+								diagnosedNode.end + node.start,
+								recommendations[5].id,
+								recommendations[5].message(diagnosedNode.name)
 							)
 						)
 					})

@@ -15,8 +15,9 @@ Lower-level tests are more fragile since they depend upon implementation details
 
 ### Discussion to select the admissible recommendation
 
-The selection of the right recommendation cannot be based on their internal consistency, since they both appear reasonable. Indeed, the former lectio states that unit tests cover less features, so they are less likely to be modified; the latter instead relies upon the stability of end-to-end tests which mirror use cases.
-In order to solve this debate, therefore, it is needed a comparison with other recommendations. The interested one is marked as recommendation R.W.8.1. In short, to avoid that testers delete test cases due to short timetables, the recommendation R.W.0.0 must be applied first and, as soon as the test suite has a certain number of integration tests, the recommendation R.W.0.1 becomes applicable as well.
+Current tools for visual testing hide most implementation details to end users, so R.W.0.0 gets consequently discarded in favor of end-to-end testing.
+
+See also: R.W.8.1
 
 ## Recommendation R.W.1
 
@@ -77,6 +78,7 @@ Integration tests must be developed before unit tests along the lifecycle of a t
 Source: S.W.5.1
 
 When testers write a new test case or when the test suite is getting big, they try to establish a rule to name test cases in a clear and consistent way; this task implies modifications in the test cases and in particular in their name. This recommendation establishes an effective naming rule from the very beginning, avoiding subsequent changes.
+Additionally, clearly stating what's the expected output in advance helps in overcoming the psychological bias that may lead the tester to define by mistake an assertion so as to make the test find no bugs.
 
 ## Recommendation R.W.8.2
 
