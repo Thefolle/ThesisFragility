@@ -19,7 +19,12 @@ According to recommendation W.0, the lint may count the number of tests grouped 
 Regarding restyling analysis, the lint may suggest the creation of a method whenever a certain statement or snippet is duplicated. However, this feature is typically already proposed by the IDE.
 When the developer tries to split the test case in logical parts, the lint may suggest either to add an explanatory comment ahead of the snippet, or to create a method with a pertinent name and Java-doc. The lint may also indicate that a test case should mirror a use case, so it should be divided in meaningful parts.
 
-Regarding recommendation W.3, the lint may suggest some id names or discourage others.
+The linter may suggest to use the page object pattern. If this option is enabled, the linter may lint bad practices regarding the pattern too.
+
+Regarding test setup, the linter may suggest to create a helper method to avoid duplicated code which increases maintenance. \cite{TestQ}
+Fixtures like beforeAll and afterAll should be probed and discouraged.
+
+Since bad practices may not apply in some contexts, the linter may allow to disable some rule checking; you may add a flag `enabled` for the purpose.
 
 ## Design
 

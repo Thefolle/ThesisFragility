@@ -42,11 +42,11 @@ Use meaningful or generic ID and class names.
 
 Instead of presentational or cryptic names, always use ID and class names that reflect the purpose of the element in question, or that are otherwise generic.
 
-Names that are specific and reflect the purpose of the element should be preferred as these are most understandable and the least likely to change.
+**Names that are specific and reflect the purpose of the element should be preferred as these are most understandable and the least likely to change.**
 
 Generic names are simply a fallback for elements that have no particular or no meaning different from their siblings. They are typically needed as “helpers.”
 
-**Using functional or generic names reduces the probability of unnecessary document or template changes**.
+Using functional or generic names reduces the probability of unnecessary document or template changes.
 
 ```CSS
 /* Not recommended: meaningless */
@@ -203,8 +203,120 @@ Another more commonly encountered form of brittleness is in graphical user inter
 
 [Software brittleness](https://en.wikipedia.org/wiki/Software_brittleness)
 
----
+## Source S.W.13
+
+In general, if HTML IDs are available, unique, and consistently predictable, they are the preferred method for locating an element on a page. They tend to work very quickly, and forego much processing that comes with complicated DOM traversals.
+
+If unique IDs are unavailable, a well-written CSS selector is the preferred method of locating an element. XPath works as well as CSS selectors, but the syntax is complicated and frequently difficult to debug. Though XPath selectors are very flexible, they are typically not performance tested by browser vendors and tend to be quite slow.
+
+Selection strategies based on linkText and partialLinkText have drawbacks in that they only work on link elements. Additionally, they call down to XPath selectors internally in WebDriver.
+
+Tag name can be a dangerous way to locate elements. There are frequently multiple elements of the same tag present on the page. This is mostly useful when calling the findElements(By) method which returns a collection of elements.
+
+The recommendation is to keep your locators as compact and readable as possible. Asking WebDriver to traverse the DOM structure is an expensive operation, and the more you can narrow the scope of your search, the better.
+
 [Order of preference of selectors](https://www.selenium.dev/documentation/webdriver/locating_elements/#tips-on-using-selectors)
+
+## Source S.W.14
+
+Once you have made the determination that you are in the web browser testing business, and you have your Selenium environment ready to begin writing tests, you will generally perform some combination of three steps:
+
+- Set up the data;
+- Perform a discrete set of actions;
+- Evaluate the results
+
+## Source S.W.15
+
+Browser automation has the reputation of being “flaky”, but in reality, that is because users frequently demand too much of it. In later chapters, we will return to techniques you can use to mitigate apparent intermittent problems in tests, in particular on how to overcome race conditions between the browser and WebDriver.
+
+You will want to keep these steps (setup, actions and assertions, n.d.r.) as short as possible; one or two operations should be enough most of the time.
+By keeping your tests short and using the web browser only when you have absolutely no alternative, you can have many tests with minimal flake.
+
+Larry has written a web site which allows users to order their custom unicorns.
+
+The general workflow (what we will call the “happy path”) is something like this:
+
+- Create an account
+- Configure the unicorn
+- Add it to the shopping cart
+- Check out and pay
+- Give feedback about the unicorn
+
+It would be tempting to write one grand Selenium script to perform all these operations–many will try. Resist the temptation! Doing so will result in a test that a) takes a long time, b) will be subject to some common issues around page rendering timing issues, and c) is such that if it fails, it will not give you a concise, “glanceable” method for diagnosing what went wrong.
+
+## Source S.W.16
+
+If each test for each workflow begins with the creation of a user account, many seconds will be added to the execution of each test. Calling an API and talking to a database are quick, “headless” operations that don’t require the expensive process of opening a browser, navigating to the right pages, clicking and waiting for the forms to be submitted, etc.
+
+## Source S.W.17
+
+The intricacies of the Page Object model will be discussed in later chapters, but we will introduce the concept here:
+
+Your tests should be composed of actions, performed from the user’s point of view, within the context of pages in the site. These pages are stored as objects, which will contain specific information about how the web page is composed and how actions are performed– very little of which should concern you as a tester.
+
+Notice that nowhere in that paragraph do we talk about buttons, fields, drop-downs, radio buttons, or web forms. Neither should your tests! You want to write your code like the user trying to solve their problem.
+
+Note that the tester still has not done anything but talk about unicorns in this code– no buttons, no locators, no browser controls. This method of modelling the application allows you to keep these test-level commands in place and unchanging, even if Larry decides next week that he no longer likes Ruby-on-Rails and decides to re-implement the entire site in the latest Haskell bindings with a Fortran front-end.
+
+Page objects themselves should never make verifications or assertions. This is part of your test and should always be within the test’s code, never in an page object. The page object will contain the representation of the page, and the services the page provides via methods but no code related to what is being tested should be within the page object.
+
+There is one, single, verification which can, and should, be within the page object and that is to verify that the page, and possibly critical elements on the page, were loaded correctly. This verification should be done while instantiating the page object. In the examples above, both the SignInPage and HomePage constructors check that the expected page is available and ready for requests from the test.
+
+A page object does not necessarily need to represent all the parts of a page itself. The same principles used for page objects can be used to create “Page Component Objects” that represent discrete chunks of the page and can be included in page objects. These component objects can provide references to the elements inside those discrete chunks, and methods to leverage the functionality provided by them. You can even nest component objects inside other component objects for more complex pages. If a page in the AUT has multiple components, or common components used throughout the site (e.g. a navigation bar), then it may improve maintainability and reduce code duplication.
+
+[The page object pattern](https://www.selenium.dev/documentation/test_practices/overview/)
+
+## Source S.W.18
+
+Selenium should not be used to prepare a test case. All repetitive actions and preparations for a test case, should be done through other methods. For example, most web UIs have authentication (e.g. a login form). Eliminating logging in via web browser before every test will improve both the speed and stability of the test. A method should be created to gain access to the AUT* (e.g. using an API to login and set a cookie).
+
+[Test setup](https://www.selenium.dev/documentation/test_practices/encouraged/generating_application_state/)
+
+## Source S.W.19
+
+Eliminating the dependencies on external services will greatly improve the speed and stability of your tests.
+
+[Mocking external services](https://www.selenium.dev/documentation/test_practices/encouraged/mock_external_services/)
+
+## Source S.W.20
+
+Although mentioned in several places it is worth mentioning again. Ensure tests are isolated from one another.
+
+- Do not share test data. Imagine several tests that each query the database for valid orders before picking one to perform an action on. Should two tests pick up the same order you are likely to get unexpected behaviour.
+
+- Clean up stale data in the application that might be picked up by another test e.g. invalid order records.
+
+- Create a new WebDriver instance per test. This helps ensure test isolation and makes parallelization simpler.
+
+[Global state should not be used](https://www.selenium.dev/documentation/test_practices/encouraged/avoid_sharing_state/)
+
+## Source S.W.21
+
+Write each test as its own unit. Write the tests in a way that will not be reliant on other tests to complete:
+
+Let us say there is a content management system with which you can create some custom content which then appears on your website as a module after publishing, and it may take some time to sync between the CMS and the application.
+
+A wrong way of testing your module is that the content is created and published in one test, and then checking the module in another test. This is not feasible as the content may not be available immediately for the other test after publishing.
+
+Instead, you can create a stub content which can be turned on and off within the affected test, and use that for validating the module. However, for content creation, you can still have a separate test.
+
+[Test independency](https://www.selenium.dev/documentation/test_practices/encouraged/test_independency/)
+
+## Source S.W.22
+
+You could enable the Fluent API design pattern in your page object.
+
+```js
+driver.get( "http://www.google.com/webhp?hl=en&amp;tab=ww" );
+GoogleSearchPage gsp = new GoogleSearchPage();
+gsp.withFluent().setSearchString().clickSearchButton();
+```
+
+## Source S.W.23
+
+Start each test from a clean known state. Ideally, spin up a new virtual machine for each test. If spinning up a new virtual machine is not practical, at least start a new WebDriver for each test.
+
+[Start the webdriver per each test](https://www.selenium.dev/documentation/test_practices/encouraged/fresh_browser_per_test/)
 
 ---
 [Compatibility between browsers: DesiredCapabilities](https://www.browserstack.com/guide/desired-capabilities-in-selenium-webdriver)

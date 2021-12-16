@@ -78,11 +78,13 @@ Integration tests must be developed before unit tests along the lifecycle of a t
 Source: S.W.5.1
 
 When testers write a new test case or when the test suite is getting big, they try to establish a rule to name test cases in a clear and consistent way; this task implies modifications in the test cases and in particular in their name. This recommendation establishes an effective naming rule from the very beginning, avoiding subsequent changes.
+
+If the name of a test case doesn't describe the starting scenario, the developer should infer it by reading the function's body.
 Additionally, clearly stating what's the expected output in advance helps in overcoming the psychological bias that may lead the tester to define by mistake an assertion so as to make the test find no bugs.
 
 ## Recommendation R.W.8.2
 
-Source: S.W.5.2
+Source: S.W.5.2, S.W.14
 
 Arranging each test case in a standard way, like the proposed one, saves effort since the plan of test cases is uniform along test suites. Saving effort, in turn, decreases the probability that the test case gets abandoned.
 
@@ -100,11 +102,12 @@ The rule proposes to run linters before commit or test run; even better, the lin
 
 ## Recommendation R.W.8.5
 
-Source: S.W.5.4
+Source: S.W.5.4, S.W.20, S.W.23, S.W.9
 
-Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.
+Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope. The issue is even worse in JavaScript, where their scope may be the whole project.
+Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications. One step further, test cases must not access the same data from the test DB; restore the DB state after each test. Even more, creating a new web driver instance per each test case ensures test isolation and easiers parallelization.
 
-See also: S.W.5.2
+See also: R.W.8.2
 
 ## Recommendation R.W.8.6
 
@@ -123,6 +126,42 @@ Keeping test cases decoupled from each other and from the context reduces fragil
 
 See also: R.W.8.5
 
+## Recommendation R.W.10
+
+Source: S.W.15
+
+Sections on data setup, actions and assertions must be as short as possible. This approach minimizes the fragility of test cases. Long test cases instead are long to run and poorly debuggable since the fault is more difficult to trace back.
+
+See also: R.W.8.2
+
+## Recommendation R.W.11
+
+Source: S.W.16, S.W.18
+
+The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the AUT exposes.
+
+## Recommendation R.W.12
+
+Source: S.W.17, S.W.15
+
+Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.
+
+## Recommendation R.W.13
+
+Source: S.W.19
+
+Third-party libraries and services decrease the stability of tests.
+
+## Recommendation R.W.14
+
+No test case should continue the workflow of other tests; instead, when the tester decides to split a use case in many test cases, each test case but the first one must rather stub the preceding scenario with a proper test setup.
+
+See also: R.W.11
+
+## Recommendation R.W.15
+
+Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.
+
 ## Recommendation W.7
 
 Test-driven development, known as TDD, is a technique that ensures that all features of a project get tested as they are being developed.
@@ -134,7 +173,7 @@ It decreases the number of defects that appear after a modification, during the 
 
 ## Recommendation W.9
 
-Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope. The issue is even worse in JavaScript, where their scope may be the whole project.
+
 
 ## Draft
 

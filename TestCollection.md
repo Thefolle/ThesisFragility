@@ -49,3 +49,5 @@ XPath fragility is not solved by extracting its literal string representation in
 Another attempt to solve fragility by surrounding snippets with wait statements for fixed time lapse: see `BrentDouglas/richfaces-3` in test case `samples/richfaces-demo/functional-test/src/test/java/org/jboss/richfaces/integrationTest/orderingList/OrderingListTestCase.java`.
 
 Here is an example of test suite management: `Vijayasok89/selenium`, `java/client/test/com/thoughtworks/selenium/WebDriverSeleniumTestSuite.java`.
+
+Regarding comments, their purpose sometimes reflect the need to summarize the user behaviour behind a certain snippet. This practice can be considered as a primitive page object pattern.
