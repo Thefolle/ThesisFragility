@@ -19,7 +19,9 @@ const recommendations = [
             *   This heuristic may produce false positives: 
             *   let pathInTheDisk = "/mnt/c/etc/bin"
             */
-            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
+            if (!literal) {
+                /* Native values like null and undefined are not stringified */
+            } else if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
                 result.push({
                     start: 0,
                     end: literal.length - 1,
@@ -39,7 +41,7 @@ const recommendations = [
             //console.log(`literal: ${literal}, ${literal.length}`)
 
             /* 
-            *   This heuristic doesn't probe the content of variables:
+            *   This heuristic doesn't probe the content of variables (i.e. false negative):
             *   let a = "/"
             *   a += "bookstore"
             */
@@ -47,7 +49,9 @@ const recommendations = [
             *   This heuristic may produce false positives: 
             *   let pathInTheDisk = "/mnt/c/etc/bin"
             */
-            if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
+            if (!literal) {
+                /* Native values like null and undefined are not stringified */
+            } else if (literal.length >= 2 && literal.charAt(0) == '/' && literal.charAt(1) != '/' && !literal.includes('#')) {
                 result.push({
                     start: 0,
                     end: literal.length - 1,
@@ -60,7 +64,7 @@ const recommendations = [
     },
     {
         id: "R.W.8.1",
-        message: (tokenValue) => "Test names must contain three parts: what is being tested, under which circumstances and what's the expected result.",
+        message: (tokenValue) => "Test names must contain three parts: what is being tested, under which circumstances and what's the expected result. Follow the pattern: When <circumstances>, then <expected result>",
         contract: (testCaseString, context) => {
             let testCase = acorn.Parser.parse(testCaseString)
             let result = []
@@ -69,9 +73,12 @@ const recommendations = [
                 CallExpression: (node, state, c) => {
                     if (node.callee.name == 'it' && node.arguments[0].type == 'Literal') {
                         let testCaseName = node.arguments[0].value
-                        
+
                         /* The heuristic in the flesh */
-                        if (testCaseName.length < 3) {
+                        // if (testCaseName.length < 3) {
+                        //     result.push(node.arguments[0])
+                        // }
+                        if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
                             result.push(node.arguments[0])
                         }
                     }
@@ -111,7 +118,7 @@ const recommendations = [
                             }
                         })
                     }
-                    
+
                     state.isInCallExpression = true
                     c(node.callee, state)
                     state.isInCallExpression = false
@@ -163,10 +170,10 @@ const recommendations = [
                     if (!localVariableIdentifiers.includes(node.name) && context.globalVariableIdentifiers.includes(node.name)) {
                         globalVariableReferences++
                         result.push(node)
-                    }   
+                    }
                 }
             })
-            
+
             walker.recursive(testCase, null, customVisitor, walker.base)
 
             //console.log(globalVariableReferences)
@@ -192,8 +199,28 @@ const recommendations = [
                     }
                 }
             })
-            
+
             walker.recursive(testCase, null, customVisitor, walker.base)
+
+            return result
+        }
+    },
+    {
+        id: "R.W.13",
+        message: (tokenValue) => "Avoid third-party libraries and services as much as possible. They decrease the stability of tests, especially when their source code cannot be accessed.",
+        contract: (declarationString, context) => {
+            let declaration = acorn.Parser.parse(declarationString)
+            let result = []
+
+            let customVisitor = walker.make({
+                AssignmentExpression: (node, state, c) => {
+                    if (node.right && node.right.callee && node.right.callee.name == 'require') {
+                        result.push(node)
+                    }
+                }
+            })
+
+            walker.recursive(declaration, null, customVisitor, walker.base)
 
             return result
         }

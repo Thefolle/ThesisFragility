@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* The GitHub reference of this test suite is:
-*   - project: mkly/buuur 
+*   - project: mkly/buuur
 *   - directory: tests/e2e/main_test.js
 */
 
