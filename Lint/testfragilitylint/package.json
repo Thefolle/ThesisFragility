@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "acorn-node": "^2.0.1",
+    "java-parser": "^2.0.0",
     "selenium-webdriver": "^4.1.0"
   }
 }

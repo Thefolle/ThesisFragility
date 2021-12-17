@@ -40,7 +40,8 @@ The number of recorded modifications that engage selectors by tag is not enough 
 
 ## Text
 
-A selector of this kind may refer to a link text, or a dropdown label for instance.
+A selector of this kind may refer to a link text, or a dropdown label for instance. As expected, text labels are way fragile, since they also accomplish a presentational purpose.
+Locators and asserts on text should be discouraged in favor of other more sturdy techniques.
 
 ## Roll up analysis
 
