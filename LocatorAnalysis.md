@@ -40,15 +40,18 @@ The number of recorded modifications that engage selectors by tag is not enough 
 
 ## Text
 
-A selector of this kind may refer to a link text, or a dropdown label for instance. As expected, text labels are way fragile, since they also accomplish a presentational purpose.
-Locators and asserts on text should be discouraged in favor of other more sturdy techniques.
+A selector of this kind may refer to a link text, or a dropdown label for instance.
+Data report 70 text modifications out of the total 1291 (5.4%); most of them (90%) belong to the assertion modifications category (78%). As expected, text labels are way fragile, independently from the context where they are employed. One reason could be that they also accomplish a presentational purpose.
+The conclusion is that locators and asserts on text should be discouraged in favor of other more sturdy techniques.
 
 ## Roll up analysis
 
 Data collected don't take into account the number of modified locators out of the number of total locators,that is the number of non-modified and modified locators of the same nature. They instead concentrate on the probability that, given a locator, it gets modified. In other words, the collected data are absolute measures rather than relative.
-Therefore, the interpretation of the collected data must be careful and possibly it should be compared with findings from other sources; this is where recommendations from the wild come into play.
+Therefore, the interpretation of the collected data must be careful and possibly it should be compared with findings from other sources; this is where recommendations from the wild come into play. [Put this observation in the validity threats].
 
 Having at hand the rolled up data in the spreadsheet regarding locators, they have been sorted by decreasing number of modifications.
 XPath locators reveal their strong fragility given that 356 of the 1300 total modifications (27%) belong to this category alone, whereas their occurrence w.r.t. the locator-based modifications is 85%.
 
 The other locators don't show relevant absolute frequencies. However, if the frequencies rank is limited to the top three selectors, the order in which they appear is the same as the locator preference of usage as suggested by the Node guidelines.
+
+Testers typically do not assert on xpaths, css, links, ids or names, even if it would be meaningful. This operation indeed requires access to the DOM, in order to retrieve data given a node.
