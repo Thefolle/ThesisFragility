@@ -34,7 +34,9 @@ As an observation, the number of *distinct* occurrences in the same test case wi
 Filtering meaningful modifications is not seamless and precise, overall. Each modification is linked to the reason that led the developer to perform it. However, this is not an issue, since a famous taxonomy already tells which are the four types of modifications that can occur: adaptive, perfective, corrective and preventive.
 As a first flavour, all modifications have been taken into account without any distinction in terms of motivation.
 
-There are more fine-grained caveats however. A given adaptive modification may occur for a huge amount of different motivations which require some effort to infer starting from the code change alone. The commit message, tool documentation and comments help for the purpose; the value of literal strings can help too, but they need to be translated to English language when necessary.
+There are more fine-grained caveats however. A given adaptive modification may occur for a huge amount of different motivations which require some effort to infer starting from the code change alone. The commit message, tool documentation and comments help for the purpose; the value of literal strings can help too, although they rarely need to be translated to English language when necessary.
+
+It is worth to spend some words on the fact that the recorded modifications also comprise additions: for instance, the addition of an XPath is taken into account as well. Although this potential threat validity was unexpected at collection time, it has been chosen to keep them during computations, since they are modifications like the remainder.
 
 ## Analysis
 

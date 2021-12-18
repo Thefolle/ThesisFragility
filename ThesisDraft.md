@@ -6,8 +6,6 @@ Analizzare la fragilità: creare script che possano analizzare lo stato di un ap
 
 No effort to measure the actual fragility in the wild have been performed so far.
 
-Cite paper 3 as example of previous work.
-
 Current lints, like Prettier, essentially check style compliance of the code: for instance, they tell how arguments of functions should be positioned or they even probe anti-patterns regarding style. Tools like ESLint, instead, are specific for a development environment.
 
 Material and studies about fragility are scarce (at least in the wild).

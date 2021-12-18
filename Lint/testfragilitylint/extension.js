@@ -102,81 +102,215 @@ function parseJava(document, diagnostics) {
 		}
 
 		classBodyDeclaration(node) {
-			//console.log(node)
-			//let methodLocation = node.classMemberDeclaration[0].location
-			//let testCaseString = document.getText(new vscode.Range(document.positionAt(methodLocation.startOffset), document.positionAt(methodLocation.endOffset + 1)))
-			//console.log(testCaseString)
-			
-			//let result = recommendations[2].contract(testCaseString, null, 'java')
-			//console.log(result)
-
+			console.log(node)
 			super.classBodyDeclaration(node)
 		}
 
-		methodDeclarator(node) {
-			let testCaseName = node.Identifier[0].image
+		methodBody(node) {
+			console.log(node)
+			let state = {localDeclarationNumber: 0}
+			super.methodBody(node, state)
 
-			let result = recommendations[2].contractJava(testCaseName)
-			if (result) {
-				diagnostics.push(
-					buildDiagnostic(
-						document,
-						node.Identifier[0].startOffset,
-						node.Identifier[0].endOffset + 1,
-						recommendations[2].id,
-						recommendations[2].message(testCaseName)
+			/* The heuristic in the flesh */
+			/* If no local declaration is available, the driver is declared globally */
+			if (state.localDeclarationNumber == 0) {
+				let recommendation = recommendations.find(recommendation => recommendation.id == "R.W.8.5")
+				if (!recommendation) {
+					console.error("Could not find a recommendation. Skipping it.")
+				} else {
+					diagnostics.push(
+						buildDiagnostic(
+							document,
+							getLocation(node.block).startOffset,
+							getLocation(node.block).endOffset + 1,
+							recommendation.id,
+							recommendation.message()
+						)
 					)
-				)
+				}
+				
+			}
+		}
+
+		blockStatements(node, state) {
+			console.log(node)
+
+			/* The recommendation in the flesh */
+			super.blockStatements(node, state)
+		}
+
+		localVariableDeclaration(node, state) {
+			state.localDeclarationNumber++
+			super.localVariableDeclaration(node)
+		}
+		
+	}
+
+	/* No need to compute global variables separately, as Java doesn't support hoisting */
+	let Visitor2 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.context = {globalVariables: []};
+			this.validateVisitor();
+		}
+
+		fieldDeclaration(node) {
+			let state = {isGlobalDeclaration: true}
+			super.fieldDeclaration(node, state)
+		}
+
+		methodBody(node) {
+			let state = {isGlobalDeclaration: false, localVariables: []}
+			super.methodBody(node, state)
+			//console.log(state.localVariables)
+		}
+
+		variableDeclaratorId(node, state) {
+			if (state && !state.isGlobalDeclaration) {
+				state.localVariables.push(node.Identifier[0])
+			} else if (state && state.isGlobalDeclaration) {
+				this.context.globalVariables.push(node.Identifier[0])
+			}
+			
+			super.variableDeclaratorId(node)
+		}
+
+		fqnOrRefTypePartFirst(node, state) {
+			//console.log(node)
+			let reference = getChild(node.fqnOrRefTypePartCommon).Identifier[0]
+
+			/* The recommendation in the flesh */
+			// if the reference was not declared as local variable
+			if (!state.localVariables.map(localVariable => localVariable.image).includes(reference.image) &&
+			this.context.globalVariables.map(globalVariable => globalVariable.image).includes(reference.image)) {
+				addDiagnostic(document, diagnostics, reference.startOffset, reference.endOffset + 1, "R.W.8.5")
 			}
 
-			super.methodDeclarator(node)
+			super.fqnOrRefTypePartFirst(node)
+		}
+
+	}
+
+	let Visitor3 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.validateVisitor();
 		}
 
 		literal(node) {
-			console.log(node)
 			let literalString = node.StringLiteral[0].image
 			/* Delete surrounding quotes from the literal */
 			if (literalString.startsWith("\"") && literalString.endsWith("\"")) {
 				literalString = literalString.substring(1, literalString.length - 1)
 			}
 			
-			let result = recommendations[0].contractJava(literalString)
-			if (result) {
-				diagnostics.push(
-					buildDiagnostic(
-						document,
-						node.StringLiteral[0].startOffset,
-						node.StringLiteral[0].endOffset + 1,
-						recommendations[0].id,
-						recommendations[0].message(literalString)
-					)
-				)
+			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
 			}
-			result = recommendations[1].contractJava(literalString)
-			if (result) {
-				diagnostics.push(
-					buildDiagnostic(
-						document,
-						node.StringLiteral[0].startOffset,
-						node.StringLiteral[0].endOffset + 1,
-						recommendations[1].id,
-						recommendations[1].message(literalString)
-					)
-				)
+			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/') {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
+			}
+			if (literalString.startsWith("css")) {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
 			}
 
+			/* Recur on inner string */
+			if (literalString.includes("\"")) {
+				//console.log(literalString)
+				let firstQuoteIndex = literalString.indexOf("\"") + 1
+				let lastQuoteIndex = literalString.lastIndexOf("\"") - 1
+				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
+
+				let innerNode = Object.assign({}, node)
+				innerNode.StringLiteral[0].image = newImage
+				innerNode.StringLiteral[0].startOffset += firstQuoteIndex + 1
+				innerNode.StringLiteral[0].endOffset -= (literalString.length - lastQuoteIndex + 1)
+				//console.log(innerNode)
+				this.literal(innerNode)
+			} else if (literalString.includes("\'")) {
+				//console.log(literalString)
+				let firstQuoteIndex = literalString.indexOf("\'") + 1
+				let lastQuoteIndex = literalString.lastIndexOf("\'")
+				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
+
+				let innerNode = Object.assign({}, node)
+				innerNode.StringLiteral[0].image = newImage
+				innerNode.StringLiteral[0].startOffset += firstQuoteIndex + 1
+				innerNode.StringLiteral[0].endOffset -= (literalString.length - lastQuoteIndex + 1)
+				//console.log(innerNode)
+
+				this.literal(innerNode)
+			}
+				
 			super.literal(node)
 		}
 	}
 
-	let visitor = new CustomVisitor()
-	visitor.visit(root)
-	visitor.customResult.forEach(item => console.log(item))
+	let Visitor4 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.validateVisitor();
+		}
+
+		methodDeclarator(node) {
+			let testCaseName = node.Identifier[0].image
+
+			if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
+				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.8.1", testCaseName)
+			}
+
+			super.methodDeclarator(node)
+		}
+	}
+
+	let visitor2 = new Visitor2()
+	visitor2.visit(root)
+	let visitor3 = new Visitor3()
+	visitor3.visit(root)
+	let visitor4 = new Visitor4()
+	visitor4.visit(root)
+
+	//visitor.customResult.forEach(item => console.log(item))
+
+	//console.log(context.globalVariables)
 }
 
-function getFunctionNameNode(node) {
-	return node.methodHeader[0].children.methodDeclarator[0].children.Identifier[0]
+function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, tokenValue) {
+	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
+	if (!recommendation) {
+		console.error("Could not find a recommendation. Skipping it.")
+	} else {
+		diagnostics.push(
+			buildDiagnostic(
+				document,
+				startOffset,
+				endOffset,
+				recommendation.id,
+				recommendation.message(tokenValue)
+			)
+		)
+	}
 }
+
+function getChild(node) {
+	return node[0].children
+}
+
+function getLocation(node) {
+	return node[0].location
+}
+
 
 function parseJavascript(document, diagnostics) {
 	let root = acorn.Parser.parse(document.getText());

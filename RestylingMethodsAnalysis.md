@@ -4,7 +4,9 @@ This paragraph discusses the task of developers that adapt the library methods t
 
 Although the task does not functionally affect test cases, given the definition of fragility defined within the scope of this research, developers devote some effort to write such utility methods.
 
-The task is performed in 5 test cases out of the 66 total test cases (7.5%). In average there are ceil(245 / 66) = 4 restyling modifications per test case, during its whole lifetime.
+The task is performed in 5 test cases out of the 66 total maintained test cases (7.5%). The most relevant test case (94% of the restyle modifications) has been entirely re-ported to a corrected API of the testing tool. Mapping the whole existing tool API is famous to be a tedious task, which partially justifies why it is delivered so rarely.
+The remaining 4 test cases have got instead spurious mappings.
+In average there are ceil(245 / 66) = 4 restyling modifications per test case, during its whole lifetime.
 
 What encourages developers to write such functions comprises clearness, readability or convenience:
 

@@ -15,7 +15,7 @@ Lower-level tests are more fragile since they depend upon implementation details
 
 ### Discussion to select the admissible recommendation
 
-Current tools for visual testing hide most implementation details to end users, so R.W.0.0 gets consequently discarded in favor of end-to-end testing.
+Current tools for visual testing hide most implementation details to end users, so R.W.0.0 gets consequently discarded in favor of R.W.0.1.
 
 See also: R.W.8.1
 
@@ -23,13 +23,13 @@ See also: R.W.8.1
 
 Source: S.W.2
 
-XPath locators relative to an element found by id come up to be more robust: for instance, //*[@id="fox"]/a.
+XPath locators relative to an element found by id come up to be more robust than absolute ones: for instance, //*[@id="fox"]/a.
 
 ## Recommendation R.W.2
 
 Source: S.W.2
 
-Locators by id allows to pick up an element in the fastest way.
+Locators by id allow to pick up an element in the fastest way.
 
 ## Recommendation R.W.3
 
@@ -77,6 +77,8 @@ Integration tests must be developed before unit tests along the lifecycle of a t
 
 Source: S.W.5.1
 
+Test names must contain three parts: what is being tested, under which circumstances and what's the expected result. Follow the pattern: When circumstances, then expected result
+
 When testers write a new test case or when the test suite is getting big, they try to establish a rule to name test cases in a clear and consistent way; this task implies modifications in the test cases and in particular in their name. This recommendation establishes an effective naming rule from the very beginning, avoiding subsequent changes.
 
 If the name of a test case doesn't describe the starting scenario, the developer should infer it by reading the function's body.
@@ -85,6 +87,8 @@ Additionally, clearly stating what's the expected output in advance helps in ove
 ## Recommendation R.W.8.2
 
 Source: S.W.5.2, S.W.14
+
+Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.
 
 Arranging each test case in a standard way, like the proposed one, saves effort since the plan of test cases is uniform along test suites. Saving effort, in turn, decreases the probability that the test case gets abandoned.
 
@@ -98,18 +102,33 @@ The fragility-related recommendations of this document may be indirectly enforce
 
 Source: S.W.5.3
 
-The rule proposes to run linters before commit or test run; even better, the linter should be run for every key that the tester presses to avoid subsequent modifications.
+Run linters before commit or test run.
+
+Even better, the linter should be run for every key that the tester presses to avoid subsequent modifications.
 
 ## Recommendation R.W.8.5
 
 Source: S.W.5.4, S.W.20, S.W.23, S.W.9
 
-Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope. The issue is even worse in JavaScript, where their scope may be the whole project.
-Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications. One step further, test cases must not access the same data from the test DB; restore the DB state after each test. Even more, creating a new web driver instance per each test case ensures test isolation and easiers parallelization.
+Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope.
+
+The issue is even worse in JavaScript, where their scope may be the whole project.
 
 See also: R.W.8.2
 
 ## Recommendation R.W.8.6
+
+Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.
+
+## Recommendation R.W.8.7
+
+One step further, test cases must not access the same data from the test DB; restore the DB state after each test.
+
+## Recommendation R.W.8.8
+
+Even more, creating a new web driver instance per each test case ensures test isolation and easiers parallelization.
+
+## Recommendation R.W.8.9
 
 Source: S.W.5.4
 
@@ -130,7 +149,7 @@ See also: R.W.8.5
 
 Source: S.W.15
 
-Sections on data setup, actions and assertions must be as short as possible. This approach minimizes the fragility of test cases. Long test cases instead are long to run and poorly debuggable since the fault is more difficult to trace back.
+Sections on data setup, actions and assertions must be as short as possible. This approach minimizes the fragility of test cases. Long test cases instead are expensive to run and poorly debuggable since the fault is more difficult to trace back.
 
 See also: R.W.8.2
 
@@ -161,6 +180,12 @@ See also: R.W.11
 ## Recommendation R.W.15
 
 Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.
+
+## Recommendation R.W.16
+
+Source: S.W.13
+
+Id locators are the most robust choice; when they are not available, CSS locators should be selected; as last resort, XPaths can be chosen.
 
 ## Recommendation W.7
 
