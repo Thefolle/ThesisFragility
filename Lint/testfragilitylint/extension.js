@@ -23,26 +23,17 @@ const { recommendations } = require('./recommendations');
  */
 function activate(context) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "testfragilitylint" is now active!');
+	console.log('Extension testfragilitylint is active.');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('testfragilitylint.aslamAlaikum', function () {
-		// The code you place here will be executed every time your command is executed
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Aslam Alaikum!');
-	});
+	// let disposable = vscode.commands.registerCommand('testfragilitylint.showTimestamp', function () {
+	// 	vscode.window.showWarningMessage(Date.now().toString())
+	// })
 
-	let disposable2 = vscode.commands.registerCommand('testfragilitylint.showTimestamp', function () {
-		vscode.window.showWarningMessage(Date.now().toString())
-	})
-
-	context.subscriptions.push(disposable);
-	context.subscriptions.push(disposable2);
+	// context.subscriptions.push(disposable);
 
 	/* vscode.languages.registerHoverProvider('javascript', {
 		provideHover(document, position, token) {
@@ -97,15 +88,12 @@ function parseJava(document, diagnostics) {
 	let Visitor1 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
-			this.context = {};
 			this.validateVisitor();
 		}
 
 		methodBody(node) {
-			let state = {localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null}
+			let state = { localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
 			super.methodBody(node, state)
-
-			//console.log(state.localVariables)
 
 			/* if there is no setup section or the driver variable is not declared locally */
 			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.image).includes(state.driverVariable))) {
@@ -115,20 +103,26 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatements(node, state) {
-			//console.log(node)
 			state.firstStatementStartingOffset = node.blockStatement[0].location.startOffset
 			super.blockStatements(node, state)
 		}
 
 		variableDeclaratorId(node, state) {
-			//console.log(node)
 			state.localVariables.push(node.Identifier[0])
 			super.variableDeclaratorId(node)
 		}
 
+		methodInvocationSuffix(node, state) {
+			super.methodInvocationSuffix(node, state)
+		}
+
 		fqnOrRefType(node, state) {
-			// if the driver variable has already been found in previous statements, skip it
+			state.hasCalledBothPartFirstAndPartRest = false // accept evaluation only if both fqnOrRefTypePartFirst and fqnOrRefTypePartRest have been called
 			super.fqnOrRefType(node, state)
+
+			if (!state.hasCalledBothPartFirstAndPartRest) {
+				state.driverVariable = null
+			}
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
@@ -138,7 +132,7 @@ function parseJava(document, diagnostics) {
 			} else {
 				state.hasSetDriverVariable = false
 			}
-			
+
 			super.fqnOrRefTypePartFirst(node)
 		}
 
@@ -149,8 +143,10 @@ function parseJava(document, diagnostics) {
 				state.driverVariable = null
 			}
 
+			state.hasCalledBothPartFirstAndPartRest = true
 			super.fqnOrRefTypePartRest(node)
 		}
+		
 	}
 
 	/* No need to compute global variables separately, as Java doesn't support hoisting */
@@ -292,84 +288,74 @@ function parseJava(document, diagnostics) {
 
 		methodBody(node) {
 			//console.log(node)
-			let state = {imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: {startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset}}
+			let state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset } }
 			super.methodBody(node, state)
 
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
-				//console.log("The test is empty.")
+				/* The test is empty: do nothing */
 			} else if (state.imInActSection && !state.errorFound) {
-				//console.log("Empty assert section")
-				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, getLocation(node.block).endOffset, "R.W.8.2", "Empty assert section.")
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, getLocation(node.block).endOffset, "R.W.8.2", "The assert section is empty.")
 			}
 		}
 
-		blockStatements(node, state) {
-			//console.log(node)
-			super.blockStatements(node, state)
-		}
-
 		blockStatement(node, state) {
-			//console.log(node)
 			let statementProperty = Object.keys(node).find(property => property.toLowerCase().includes("statement"))
-			state.currentStatement = {startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset}
+			state.currentStatement = { startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset }
 			let statementSection = Object.assign({}, state)
 
 			super.blockStatement(node, statementSection)
 
 			if (state.errorFound) return // probe only the first error
+
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && statementSection.imInFixtureSection) {
+
 				state.imInFixtureSection = true
+
 			} else if (state.imInFixtureSection && statementSection.imInActSection) {
+
 				state.imInFixtureSection = false
 				state.imInActSection = true
+
 			} else if (state.imInActSection && statementSection.imInAssertSection) {
+				
 				state.imInActSection = false
 				state.imInAssertSection = true
+			
 			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
-				//console.log("Empty fixture section")
 				
 				state.errorFound = true
-				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty fixture section.")
+				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "The setup section is empty.")
+			
 			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
-				//console.log("Empty act section.")
 				
 				state.errorFound = true
-				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty act section.")
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "The act section is empty.")
+			
 			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
-				//console.log("The declaration is inside the act section.")
 				
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The declaration is inside the act section.")
+			
 			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
-				//console.log("Fixture statement inside assert section.")
 				
 				state.errorFound = true
-				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "Fixture statement inside assert section.")
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The setup statement is inside the assert section.")
+			
 			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
-				//console.log("Act statement inside assert section.")
 				
 				state.errorFound = true
-				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "Act statement inside assert section.")
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The act statement is inside the assert section.")
+			
 			}
 
 			// this statement must go after the recursive call
 			state.lastStatement = state.currentStatement
 		}
 
-		fqnOrRefType(node, state) {
-			
-			super.fqnOrRefType(node, state)
-
-			//console.log(node)
-			
-		}
-
 		variableDeclaratorId(node, state) {
 			state.imInFixtureSection = true
 			state.imInActSection = false
 			state.imInAssertSection = false
-
-			console.log(node)
 
 			super.variableDeclaratorId(node, state)
 		}
@@ -387,8 +373,6 @@ function parseJava(document, diagnostics) {
 
 		fqnOrRefTypePartRest(node, state) {
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
-
-			//console.log(calledMethod)
 
 			if (calledMethod.includes("click") || calledMethod.includes("waitForCondition") || calledMethod.includes("type")) {
 				state.imInFixtureSection = false

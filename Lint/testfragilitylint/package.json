@@ -10,21 +10,11 @@
     "Linters"
   ],
   "activationEvents": [
-    "onCommand:testfragilitylint.aslamAlaikum",
-    "onCommand:testfragilitylint.showTimestamp"
+    "onLanguage:java"
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "testfragilitylint.aslamAlaikum",
-        "title": "Aslam Alaikum"
-      },
-      {
-        "command": "testfragilitylint.showTimestamp",
-        "title": "Show Timestamp"
-      }
-    ]
+    "commands": []
   },
   "scripts": {
     "lint": "eslint .",
