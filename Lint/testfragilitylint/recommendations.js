@@ -307,7 +307,7 @@ const recommendations = [
     },
     {
         id: "R.W.8.2",
-        message: (tokenValue) => `Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.`
+        message: (message) => `${message} Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.`
     },
     {
         id: "R.W.8.3",

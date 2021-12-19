@@ -24,19 +24,9 @@ public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
     public void browseCreateModal() {
-        selenium.click("css=img[alt=\"Configuration\"]");
-
-        selenium.waitForCondition("selenium.isElementPresent(\"//div[@id='tabs']\");", "30000");
-
-        selenium.click("//a[contains(text(),'Create new configuration')]");
-
-        selenium.waitForCondition("selenium.isElementPresent(\"//input[@name='key:textField']\");", "30000");
-
-        selenium.type("name=key:textField", "test1");
-        selenium.type("name=value:textField", "value1");
-        selenium.click("name=apply");
-
-        selenium.waitForCondition("selenium.isTextPresent(\"Operation executed successfully\");", "30000");
+        int a = 3;
+        
+        assertTrue(a, 2);
     }
 
     @Test

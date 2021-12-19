@@ -105,13 +105,12 @@ function parseJava(document, diagnostics) {
 			let state = {localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null}
 			super.methodBody(node, state)
 
-			console.log(state.localVariables)
+			//console.log(state.localVariables)
 
 			/* if there is no setup section or the driver variable is not declared locally */
 			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.image).includes(state.driverVariable))) {
 				// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
 				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.8")
-				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.2")
 			}
 		}
 
@@ -207,6 +206,8 @@ function parseJava(document, diagnostics) {
 		}
 
 		literal(node) {
+			if (!node.StringLiteral) return // if the literal is not a string
+
 			let literalString = node.StringLiteral[0].image
 			/* Delete surrounding quotes from the literal */
 			if (literalString.startsWith("\"") && literalString.endsWith("\"")) {
@@ -283,18 +284,134 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let visitor1 = new Visitor1()
-	visitor1.visit(root)
-	let visitor2 = new Visitor2()
-	visitor2.visit(root)
-	let visitor3 = new Visitor3()
-	visitor3.visit(root)
-	let visitor4 = new Visitor4()
-	visitor4.visit(root)
+	let Visitor5 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.validateVisitor();
+		}
 
-	//visitor.customResult.forEach(item => console.log(item))
+		methodBody(node) {
+			console.log(node)
+			let state = {imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: {startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset}}
+			super.methodBody(node, state)
 
-	//console.log(context.globalVariables)
+			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
+				console.log("The test is empty.")
+			} else if (state.imInActSection) {
+				console.log("Empty assert section")
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, getLocation(node.block).endOffset, "R.W.8.2", "Empty assert section.")
+			}
+		}
+
+		blockStatements(node, state) {
+			//console.log(node)
+			super.blockStatements(node, state)
+		}
+
+		blockStatement(node, state) {
+			//console.log(node)
+			let statementProperty = Object.keys(node).find(property => property.toLowerCase().includes("statement"))
+			state.currentStatement = {startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset}
+
+			super.blockStatement(node, state)
+			// this statement must go after the recursive call
+			state.lastStatement = state.currentStatement
+		}
+
+		fqnOrRefType(node, state) {
+			let statementSection = Object.assign({}, state)
+			super.fqnOrRefType(node, statementSection)
+
+			//console.log(node)
+			if (state.errorFound) return // probe only the first error
+			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && statementSection.imInFixtureSection) {
+				state.imInFixtureSection = true
+			} else if (state.imInFixtureSection && statementSection.imInActSection) {
+				state.imInFixtureSection = false
+				state.imInActSection = true
+			} else if (state.imInActSection && statementSection.imInAssertSection) {
+				state.imInActSection = false
+				state.imInAssertSection = true
+			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
+				console.log("Empty fixture section")
+				
+				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty fixture section.")
+				state.errorFound = true
+			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
+				console.log("Empty act section.")
+				
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty act section.")
+				state.errorFound = true
+			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
+				console.log("The declaration is inside the act section.")
+				
+				state.errorFound = true
+				//addDiagnostic(document, diagnostics, )
+			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
+				console.log("Fixture statement inside assert section.")
+				
+				state.errorFound = true
+			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
+				console.log("Act statement inside assert section.")
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "Act statement inside assert section.")
+			}
+		}
+
+		variableDeclaratorId(node, state) {
+			state.imInFixtureSection = true
+			state.imInActSection = false
+			state.imInAssertSection = false
+
+			super.variableDeclaratorId(node, state)
+		}
+
+		fqnOrRefTypePartFirst(node, state) {
+			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+			if (calledMethod.includes("assert")) {
+				state.imInFixtureSection = false
+				state.imInActSection = false
+				state.imInAssertSection = true
+			}
+
+			super.fqnOrRefTypePartFirst(node, state)
+		}
+
+		fqnOrRefTypePartRest(node, state) {
+			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+
+			if (calledMethod.includes("click") || calledMethod.includes("waitForCondition") || calledMethod.includes("type")) {
+				state.imInFixtureSection = false
+				state.imInActSection = true
+				state.imInAssertSection = false
+			} else if (calledMethod.includes("assert")) {
+				state.imInFixtureSection = false
+				state.imInActSection = false
+				state.imInAssertSection = true
+			}
+
+			super.fqnOrRefTypePartRest(node, state)
+		}
+
+	}
+
+	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4(), new Visitor5()]
+	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
+		try {
+			visitor.visit(root)
+			resolve(undefined)
+		} catch (e) {
+			reject(e)
+		}
+	}))
+
+	Promise.all(promises).then(res =>
+		undefined
+	).catch(err => {
+		/* Probable parsing error */
+		console.error(err)
+	})
 }
 
 function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, tokenValue) {
