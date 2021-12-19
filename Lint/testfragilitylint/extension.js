@@ -126,23 +126,26 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefType(node, state) {
-			console.log(node)
-			state.isDriverVariable = false
+			// if the driver variable has already been found in previous statements, skip it
 			super.fqnOrRefType(node, state)
-
-			if (!state.isDriverVariable) state.driverVariable = null
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			state.driverVariable = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+			if (!state.driverVariable) {
+				state.driverVariable = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+				state.hasSetDriverVariable = true
+			} else {
+				state.hasSetDriverVariable = false
+			}
+			
 			super.fqnOrRefTypePartFirst(node)
 		}
 
 		fqnOrRefTypePartRest(node, state) {
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
 
-			if (calledMethod.includes("click")) {
-				state.isDriverVariable = true
+			if (!calledMethod.includes("click") && state.hasSetDriverVariable) {
+				state.driverVariable = null
 			}
 
 			super.fqnOrRefTypePartRest(node)

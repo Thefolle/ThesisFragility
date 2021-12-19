@@ -24,7 +24,7 @@ public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
     public void browseCreateModal() {
-        int seleniu4 = new Selenium("");
+        int selenium = new Selenium("");
         
         selenium.click("css=img[alt=\"Configuration\"]");
 
