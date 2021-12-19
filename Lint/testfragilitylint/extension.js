@@ -291,14 +291,14 @@ function parseJava(document, diagnostics) {
 		}
 
 		methodBody(node) {
-			console.log(node)
+			//console.log(node)
 			let state = {imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: {startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset}}
 			super.methodBody(node, state)
 
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
-				console.log("The test is empty.")
-			} else if (state.imInActSection) {
-				console.log("Empty assert section")
+				//console.log("The test is empty.")
+			} else if (state.imInActSection && !state.errorFound) {
+				//console.log("Empty assert section")
 				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, getLocation(node.block).endOffset, "R.W.8.2", "Empty assert section.")
 			}
 		}
@@ -312,17 +312,10 @@ function parseJava(document, diagnostics) {
 			//console.log(node)
 			let statementProperty = Object.keys(node).find(property => property.toLowerCase().includes("statement"))
 			state.currentStatement = {startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset}
-
-			super.blockStatement(node, state)
-			// this statement must go after the recursive call
-			state.lastStatement = state.currentStatement
-		}
-
-		fqnOrRefType(node, state) {
 			let statementSection = Object.assign({}, state)
-			super.fqnOrRefType(node, statementSection)
 
-			//console.log(node)
+			super.blockStatement(node, statementSection)
+
 			if (state.errorFound) return // probe only the first error
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && statementSection.imInFixtureSection) {
 				state.imInFixtureSection = true
@@ -333,36 +326,50 @@ function parseJava(document, diagnostics) {
 				state.imInActSection = false
 				state.imInAssertSection = true
 			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
-				console.log("Empty fixture section")
+				//console.log("Empty fixture section")
 				
+				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty fixture section.")
-				state.errorFound = true
 			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
-				console.log("Empty act section.")
+				//console.log("Empty act section.")
 				
+				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "Empty act section.")
-				state.errorFound = true
 			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
-				console.log("The declaration is inside the act section.")
+				//console.log("The declaration is inside the act section.")
 				
 				state.errorFound = true
-				//addDiagnostic(document, diagnostics, )
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The declaration is inside the act section.")
 			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
-				console.log("Fixture statement inside assert section.")
+				//console.log("Fixture statement inside assert section.")
 				
 				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "Fixture statement inside assert section.")
 			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
-				console.log("Act statement inside assert section.")
+				//console.log("Act statement inside assert section.")
 				
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "Act statement inside assert section.")
 			}
+
+			// this statement must go after the recursive call
+			state.lastStatement = state.currentStatement
+		}
+
+		fqnOrRefType(node, state) {
+			
+			super.fqnOrRefType(node, state)
+
+			//console.log(node)
+			
 		}
 
 		variableDeclaratorId(node, state) {
 			state.imInFixtureSection = true
 			state.imInActSection = false
 			state.imInAssertSection = false
+
+			console.log(node)
 
 			super.variableDeclaratorId(node, state)
 		}
@@ -380,6 +387,8 @@ function parseJava(document, diagnostics) {
 
 		fqnOrRefTypePartRest(node, state) {
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+
+			//console.log(calledMethod)
 
 			if (calledMethod.includes("click") || calledMethod.includes("waitForCondition") || calledMethod.includes("type")) {
 				state.imInFixtureSection = false
