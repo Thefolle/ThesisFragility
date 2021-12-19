@@ -105,8 +105,10 @@ function parseJava(document, diagnostics) {
 			let state = {localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null}
 			super.methodBody(node, state)
 
+			console.log(state.localVariables)
+
 			/* if there is no setup section or the driver variable is not declared locally */
-			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.includes(state.driverVariable))) {
+			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.image).includes(state.driverVariable))) {
 				// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
 				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.8")
 				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.2")

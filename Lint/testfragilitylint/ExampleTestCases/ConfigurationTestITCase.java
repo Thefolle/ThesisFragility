@@ -24,8 +24,6 @@ public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
     public void browseCreateModal() {
-        int selenium = new Selenium("");
-        
         selenium.click("css=img[alt=\"Configuration\"]");
 
         selenium.waitForCondition("selenium.isElementPresent(\"//div[@id='tabs']\");", "30000");
