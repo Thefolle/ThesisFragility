@@ -24,6 +24,8 @@ public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
     public void browseCreateModal() {
+        int seleniu4 = new Selenium("");
+        
         selenium.click("css=img[alt=\"Configuration\"]");
 
         selenium.waitForCondition("selenium.isElementPresent(\"//div[@id='tabs']\");", "30000");
@@ -56,6 +58,7 @@ public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
     public void browsePasswordPolicy() {
+        
         selenium.click("css=img[alt=\"Configuration\"]");
 
         selenium.waitForCondition("selenium.isElementPresent(\"//div[@id='tabs']\");", "30000");

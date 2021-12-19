@@ -331,7 +331,7 @@ const recommendations = [
     },
     {
         id: "R.W.8.8",
-        message: (tokenValue) => `Even more, creating a new web driver instance per each test case ensures test isolation and easiers parallelization.`
+        message: (tokenValue) => `Creating a new web driver instance per each test case ensures test isolation and easier parallelization.`
     },
     {
         id: "R.W.8.9",

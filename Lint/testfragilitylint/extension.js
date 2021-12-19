@@ -94,73 +94,76 @@ function updateDiagnostics(document, collection) {
 function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
 
-	let CustomVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let Visitor1 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
-			this.customResult = [];
+			this.context = {};
 			this.validateVisitor();
 		}
 
-		classBodyDeclaration(node) {
-			console.log(node)
-			super.classBodyDeclaration(node)
-		}
-
 		methodBody(node) {
-			console.log(node)
-			let state = {localDeclarationNumber: 0}
+			let state = {localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null}
 			super.methodBody(node, state)
 
-			/* The heuristic in the flesh */
-			/* If no local declaration is available, the driver is declared globally */
-			if (state.localDeclarationNumber == 0) {
-				let recommendation = recommendations.find(recommendation => recommendation.id == "R.W.8.5")
-				if (!recommendation) {
-					console.error("Could not find a recommendation. Skipping it.")
-				} else {
-					diagnostics.push(
-						buildDiagnostic(
-							document,
-							getLocation(node.block).startOffset,
-							getLocation(node.block).endOffset + 1,
-							recommendation.id,
-							recommendation.message()
-						)
-					)
-				}
-				
+			/* if there is no setup section or the driver variable is not declared locally */
+			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.includes(state.driverVariable))) {
+				// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
+				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.8")
+				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, state.firstStatementStartingOffset, "R.W.8.2")
 			}
 		}
 
 		blockStatements(node, state) {
-			console.log(node)
-
-			/* The recommendation in the flesh */
+			//console.log(node)
+			state.firstStatementStartingOffset = node.blockStatement[0].location.startOffset
 			super.blockStatements(node, state)
 		}
 
-		localVariableDeclaration(node, state) {
-			state.localDeclarationNumber++
-			super.localVariableDeclaration(node)
+		variableDeclaratorId(node, state) {
+			//console.log(node)
+			state.localVariables.push(node.Identifier[0])
+			super.variableDeclaratorId(node)
 		}
-		
+
+		fqnOrRefType(node, state) {
+			console.log(node)
+			state.isDriverVariable = false
+			super.fqnOrRefType(node, state)
+
+			if (!state.isDriverVariable) state.driverVariable = null
+		}
+
+		fqnOrRefTypePartFirst(node, state) {
+			state.driverVariable = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+			super.fqnOrRefTypePartFirst(node)
+		}
+
+		fqnOrRefTypePartRest(node, state) {
+			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+
+			if (calledMethod.includes("click")) {
+				state.isDriverVariable = true
+			}
+
+			super.fqnOrRefTypePartRest(node)
+		}
 	}
 
 	/* No need to compute global variables separately, as Java doesn't support hoisting */
 	let Visitor2 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
-			this.context = {globalVariables: []};
+			this.context = { globalVariables: [] };
 			this.validateVisitor();
 		}
 
 		fieldDeclaration(node) {
-			let state = {isGlobalDeclaration: true}
+			let state = { isGlobalDeclaration: true }
 			super.fieldDeclaration(node, state)
 		}
 
 		methodBody(node) {
-			let state = {isGlobalDeclaration: false, localVariables: []}
+			let state = { isGlobalDeclaration: false, localVariables: [] }
 			super.methodBody(node, state)
 			//console.log(state.localVariables)
 		}
@@ -171,7 +174,7 @@ function parseJava(document, diagnostics) {
 			} else if (state && state.isGlobalDeclaration) {
 				this.context.globalVariables.push(node.Identifier[0])
 			}
-			
+
 			super.variableDeclaratorId(node)
 		}
 
@@ -182,7 +185,8 @@ function parseJava(document, diagnostics) {
 			/* The recommendation in the flesh */
 			// if the reference was not declared as local variable
 			if (!state.localVariables.map(localVariable => localVariable.image).includes(reference.image) &&
-			this.context.globalVariables.map(globalVariable => globalVariable.image).includes(reference.image)) {
+				this.context.globalVariables.map(globalVariable => globalVariable.image).includes(reference.image)) {
+
 				addDiagnostic(document, diagnostics, reference.startOffset, reference.endOffset + 1, "R.W.8.5")
 			}
 
@@ -203,7 +207,7 @@ function parseJava(document, diagnostics) {
 			if (literalString.startsWith("\"") && literalString.endsWith("\"")) {
 				literalString = literalString.substring(1, literalString.length - 1)
 			}
-			
+
 			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
@@ -252,7 +256,7 @@ function parseJava(document, diagnostics) {
 
 				this.literal(innerNode)
 			}
-				
+
 			super.literal(node)
 		}
 	}
@@ -274,6 +278,8 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
+	let visitor1 = new Visitor1()
+	visitor1.visit(root)
 	let visitor2 = new Visitor2()
 	visitor2.visit(root)
 	let visitor3 = new Visitor3()
@@ -467,7 +473,7 @@ function buildDiagnostic(document, start, end, code, message) {
 		new vscode.Range(document.positionAt(start), document.positionAt(end)),
 		message,
 		vscode.DiagnosticSeverity.Warning
-		)
+	)
 
 	diagnostic.code = code
 	diagnostic.source = 'Fragility linter'
