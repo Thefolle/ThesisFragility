@@ -91,12 +91,35 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		// annotation(node, state) {
-		// 	console.log(node)
-		// 	super.annotation(node, state)
-		// }
+		methodDeclaration(node) {
+			let state = {isFixtureMethod: false}
+			super.methodDeclaration(node, state)
+		}
 
-		methodBody(node) {
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'After' || annotationName == 'Before') {
+				state.isFixtureMethod = true
+			}
+		}
+
+		methodBody(node, pastState) {
+			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
+				super.methodBody(node)
+				return 
+			}
+
 			let state = { localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
 			super.methodBody(node, state)
 
@@ -108,21 +131,30 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatements(node, state) {
-			if (!state) return // If the state is undefined, the node is outside a method body
+			if (!state) {
+				super.blockStatements(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			state.firstStatementStartingOffset = node.blockStatement[0].location.startOffset
 			super.blockStatements(node, state)
 		}
 
 		variableDeclaratorId(node, state) {
-			if (!state) return // If the state is undefined, the node is outside a method body
+			if (!state) {
+				super.variableDeclaratorId(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			state.localVariables.push(node.Identifier[0])
 			super.variableDeclaratorId(node)
 		}
 
 		fqnOrRefType(node, state) {
-			if (!state) return // If the state is undefined, the node is outside a method body
+			if (!state) {
+				super.fqnOrRefType(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			state.hasCalledBothPartFirstAndPartRest = false // accept evaluation only if both fqnOrRefTypePartFirst and fqnOrRefTypePartRest have been called
 			super.fqnOrRefType(node, state)
@@ -133,7 +165,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			if (!state) return // If the state is undefined, the node is outside a method body
+			if (!state) {
+				super.fqnOrRefTypePartFirst(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			if (!state.driverVariable) {
 				let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
@@ -147,7 +182,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartRest(node, state) {
-			if (!state) return // If the state is undefined, the node is outside a method body
+			if (!state) {
+				super.fqnOrRefTypePartRest(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
 
@@ -169,18 +207,50 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
+		methodDeclaration(node) {
+			let state = {isFixtureMethod: false}
+			super.methodDeclaration(node, state)
+		}
+
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'After' || annotationName == 'Before') {
+				state.isFixtureMethod = true
+			}
+		}
+			
+
 		fieldDeclaration(node) {
 			let state = { isGlobalDeclaration: true }
 			super.fieldDeclaration(node, state)
 		}
 
-		methodBody(node) {
+		methodBody(node, pastState) {
+			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
+				super.methodBody(node)
+				return 
+			}
+
 			let state = { isGlobalDeclaration: false, localVariables: [], imInBody: true }
 			super.methodBody(node, state)
 		}
 
 		variableDeclaratorId(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.variableDeclaratorId(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			if (state && !state.isGlobalDeclaration) {
 				state.localVariables.push(node.Identifier[0])
@@ -192,7 +262,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.fqnOrRefTypePartFirst(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
 			let reference = getChild(node.fqnOrRefTypePartCommon)[property][0].image
@@ -216,7 +289,35 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		literal(node) {
+		methodDeclaration(node) {
+			let state = {isFixtureMethod: false}
+			super.methodDeclaration(node, state)
+		}
+
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'After' || annotationName == 'Before') {
+				state.isFixtureMethod = true
+			}
+		}
+
+		literal(node, pastState) {
+			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
+				super.literal(node)
+				return 
+			}
+
 			if (!node.StringLiteral) return // if the literal is not a string
 
 			let literalString = node.StringLiteral[0].image
@@ -284,7 +385,35 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclarator(node) {
+		methodDeclaration(node) {
+			let state = {isFixtureMethod: false}
+			super.methodDeclaration(node, state)
+		}
+
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'After' || annotationName == 'Before') {
+				state.isFixtureMethod = true
+			}
+		}
+
+		methodDeclarator(node, pastState) {
+			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
+				super.methodDeclarator(node)
+				return 
+			}
+
 			let testCaseName = node.Identifier[0].image
 
 			if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
@@ -301,7 +430,35 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodBody(node) {
+		methodDeclaration(node) {
+			let state = {isFixtureMethod: false}
+			super.methodDeclaration(node, state)
+		}
+
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'After' || annotationName == 'Before') {
+				state.isFixtureMethod = true
+			}
+		}
+
+		methodBody(node, pastState) {
+			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
+				super.methodDeclarator(node)
+				return 
+			}
+
 			let state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset }, imInBody: true }
 			super.methodBody(node, state)
 
@@ -313,7 +470,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatement(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.blockStatement(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			let statementProperty = Object.keys(node).find(property => property.toLowerCase().includes("statement"))
 			state.currentStatement = { startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset }
@@ -369,7 +529,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		variableDeclaratorId(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.variableDeclaratorId(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			state.imInFixtureSection = true
 			state.imInActSection = false
@@ -379,11 +542,14 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.fqnOrRefTypePartFirst(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon)[property][0].image
-			
+
 			if (calledMethod.includes("assert")) {
 				state.imInFixtureSection = false
 				state.imInActSection = false
@@ -394,7 +560,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartRest(node, state) {
-			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+			if (!state || !state.imInBody) {
+				super.fqnOrRefTypePartRest(node)
+				return // If the state is undefined, the node is outside a method body
+			}
 
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
 
@@ -413,7 +582,53 @@ function parseJava(document, diagnostics) {
 
 	}
 
-	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4(), new Visitor5()]
+	let Visitor6 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.validateVisitor();
+		}
+
+		classMemberDeclaration(node) {
+			if (!node.methodDeclaration) { // if the current declaration is not a method
+				super.classMemberDeclaration(node)
+				return
+			}
+
+			let state = {startOffset: getLocation(node.methodDeclaration).startOffset, endOffset: getLocation(node.methodDeclaration).endOffset}
+			super.classMemberDeclaration(node, state)
+		}
+
+		methodDeclaration(node, state) {
+			state.isFixtureMethod = false
+			super.methodDeclaration(node, state)
+
+			if (state.isFixtureMethod) {
+				addDiagnostic(document, diagnostics, state.startOffset, state.endOffset, "R.W.9", "Usage of setup/tear down method.")
+			}
+		}
+
+		methodModifier(node, state) {
+			state.imInMethodModifier = true
+			super.methodModifier(node, state)
+		}
+
+		annotation(node, state) {
+			if (!state || !state.imInMethodModifier) {
+				super.annotation(node)
+				return
+			}
+
+			let annotationName = getChild(node.typeName).Identifier[0].image
+
+			if (annotationName == 'Before') {
+				state.isFixtureMethod = true
+			} else if (annotationName == 'After' ) {
+				state.isFixtureMethod = true
+			}
+		}
+	}
+
+	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4(), new Visitor5(), new Visitor6()]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			visitor.visit(root)

@@ -323,7 +323,7 @@ const recommendations = [
     },
     {
         id: "R.W.8.6",
-        message: (tokenValue) => `Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.`
+        message: (message) => `${message} Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.`
     },
     {
         id: "R.W.8.7",
@@ -339,7 +339,7 @@ const recommendations = [
     },
     {
         id: "R.W.9",
-        message: (tokenValue) => `Keeping test cases decoupled from each other and from the context reduces fragility against any type of modification.`
+        message: (message) => `${message} Keeping test cases decoupled from each other and from the context reduces fragility against any type of modification.`
     },
     {
         id: "R.W.10",
