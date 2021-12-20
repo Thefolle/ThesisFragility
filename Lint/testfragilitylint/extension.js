@@ -91,6 +91,11 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
+		// annotation(node, state) {
+		// 	console.log(node)
+		// 	super.annotation(node, state)
+		// }
+
 		methodBody(node) {
 			let state = { localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
 			super.methodBody(node, state)
@@ -103,20 +108,22 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatements(node, state) {
+			if (!state) return // If the state is undefined, the node is outside a method body
+
 			state.firstStatementStartingOffset = node.blockStatement[0].location.startOffset
 			super.blockStatements(node, state)
 		}
 
 		variableDeclaratorId(node, state) {
+			if (!state) return // If the state is undefined, the node is outside a method body
+
 			state.localVariables.push(node.Identifier[0])
 			super.variableDeclaratorId(node)
 		}
 
-		methodInvocationSuffix(node, state) {
-			super.methodInvocationSuffix(node, state)
-		}
-
 		fqnOrRefType(node, state) {
+			if (!state) return // If the state is undefined, the node is outside a method body
+
 			state.hasCalledBothPartFirstAndPartRest = false // accept evaluation only if both fqnOrRefTypePartFirst and fqnOrRefTypePartRest have been called
 			super.fqnOrRefType(node, state)
 
@@ -126,8 +133,11 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
+			if (!state) return // If the state is undefined, the node is outside a method body
+
 			if (!state.driverVariable) {
-				state.driverVariable = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+				let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
+				state.driverVariable = getChild(node.fqnOrRefTypePartCommon)[property][0].image
 				state.hasSetDriverVariable = true
 			} else {
 				state.hasSetDriverVariable = false
@@ -137,6 +147,8 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartRest(node, state) {
+			if (!state) return // If the state is undefined, the node is outside a method body
+
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
 
 			if (!calledMethod.includes("click") && state.hasSetDriverVariable) {
@@ -163,12 +175,13 @@ function parseJava(document, diagnostics) {
 		}
 
 		methodBody(node) {
-			let state = { isGlobalDeclaration: false, localVariables: [] }
+			let state = { isGlobalDeclaration: false, localVariables: [], imInBody: true }
 			super.methodBody(node, state)
-			//console.log(state.localVariables)
 		}
 
 		variableDeclaratorId(node, state) {
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
 			if (state && !state.isGlobalDeclaration) {
 				state.localVariables.push(node.Identifier[0])
 			} else if (state && state.isGlobalDeclaration) {
@@ -179,8 +192,10 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			//console.log(node)
-			let reference = getChild(node.fqnOrRefTypePartCommon).Identifier[0]
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
+			let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
+			let reference = getChild(node.fqnOrRefTypePartCommon)[property][0].image
 
 			/* The recommendation in the flesh */
 			// if the reference was not declared as local variable
@@ -287,8 +302,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		methodBody(node) {
-			//console.log(node)
-			let state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset } }
+			let state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset }, imInBody: true }
 			super.methodBody(node, state)
 
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
@@ -299,6 +313,8 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatement(node, state) {
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
 			let statementProperty = Object.keys(node).find(property => property.toLowerCase().includes("statement"))
 			state.currentStatement = { startOffset: getLocation(node[statementProperty]).startOffset, endOffset: getLocation(node[statementProperty]).endOffset }
 			let statementSection = Object.assign({}, state)
@@ -353,6 +369,8 @@ function parseJava(document, diagnostics) {
 		}
 
 		variableDeclaratorId(node, state) {
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
 			state.imInFixtureSection = true
 			state.imInActSection = false
 			state.imInAssertSection = false
@@ -361,7 +379,11 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
+			let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
+			let calledMethod = getChild(node.fqnOrRefTypePartCommon)[property][0].image
+			
 			if (calledMethod.includes("assert")) {
 				state.imInFixtureSection = false
 				state.imInActSection = false
@@ -372,6 +394,8 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartRest(node, state) {
+			if (!state || !state.imInBody) return // If the state is undefined, the node is outside a method body
+
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
 
 			if (calledMethod.includes("click") || calledMethod.includes("waitForCondition") || calledMethod.includes("type")) {
@@ -410,7 +434,7 @@ function parseJava(document, diagnostics) {
 function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, tokenValue) {
 	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
 	if (!recommendation) {
-		console.error("Could not find a recommendation. Skipping it.")
+		console.error(`Could not find recommendation ${recommendationId}. Skipping it.`)
 	} else {
 		diagnostics.push(
 			buildDiagnostic(
@@ -448,8 +472,6 @@ function parseJavascript(document, diagnostics) {
 
 				let declarationString = document.getText(new vscode.Range(document.positionAt(declaration.start), document.positionAt(declaration.end)));
 				let result = recommendations[6].contract(declarationString, context);
-
-				//console.log(JSON.stringify(result))
 				result.forEach(diagnosedNode => {
 					diagnostics.push(
 						buildDiagnostic(
