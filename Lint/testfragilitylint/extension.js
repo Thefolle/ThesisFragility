@@ -8,8 +8,6 @@ const walker = require('acorn-node/walk')
 const javaParser = require('java-parser')
 
 const { recommendations } = require('./recommendations');
-const internal = require('stream');
-
 
 
 // this method is called when your extension is activated
@@ -102,35 +100,7 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclaration(node) {
-			let state = {isFixtureMethod: false}
-			super.methodDeclaration(node, state)
-		}
-
-		methodModifier(node, state) {
-			state.imInMethodModifier = true
-			super.methodModifier(node, state)
-		}
-
-		annotation(node, state) {
-			if (!state || !state.imInMethodModifier) {
-				super.annotation(node)
-				return
-			}
-
-			let annotationName = getChild(node.typeName).Identifier[0].image
-
-			if (annotationName == 'After' || annotationName == 'Before') {
-				state.isFixtureMethod = true
-			}
-		}
-
 		methodBody(node, pastState) {
-			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
-				super.methodBody(node)
-				return 
-			}
-
 			let state = { localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
 			super.methodBody(node, state)
 
@@ -217,42 +187,13 @@ function parseJava(document, diagnostics) {
 			this.context = { globalVariables: [] };
 			this.validateVisitor();
 		}
-
-		methodDeclaration(node) {
-			let state = {isFixtureMethod: false}
-			super.methodDeclaration(node, state)
-		}
-
-		methodModifier(node, state) {
-			state.imInMethodModifier = true
-			super.methodModifier(node, state)
-		}
-
-		annotation(node, state) {
-			if (!state || !state.imInMethodModifier) {
-				super.annotation(node)
-				return
-			}
-
-			let annotationName = getChild(node.typeName).Identifier[0].image
-
-			if (annotationName == 'After' || annotationName == 'Before') {
-				state.isFixtureMethod = true
-			}
-		}
 			
-
 		fieldDeclaration(node) {
 			let state = { isGlobalDeclaration: true }
 			super.fieldDeclaration(node, state)
 		}
 
-		methodBody(node, pastState) {
-			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
-				super.methodBody(node)
-				return 
-			}
-
+		methodBody(node) {
 			let state = { isGlobalDeclaration: false, localVariables: [], imInBody: true }
 			super.methodBody(node, state)
 		}
@@ -300,35 +241,14 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclaration(node) {
-			let state = {isFixtureMethod: false}
-			super.methodDeclaration(node, state)
+		/* Method to provide better precision */
+		fqnOrRefTypePartRest(node) {
+			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
+			let state = {calledMethod}
+			super.fqnOrRefTypePartRest(node, state)
 		}
 
-		methodModifier(node, state) {
-			state.imInMethodModifier = true
-			super.methodModifier(node, state)
-		}
-
-		annotation(node, state) {
-			if (!state || !state.imInMethodModifier) {
-				super.annotation(node)
-				return
-			}
-
-			let annotationName = getChild(node.typeName).Identifier[0].image
-
-			if (annotationName == 'After' || annotationName == 'Before') {
-				state.isFixtureMethod = true
-			}
-		}
-
-		literal(node, pastState) {
-			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
-				super.literal(node)
-				return 
-			}
-
+		literal(node, state) {
 			if (!node.StringLiteral) return // if the literal is not a string
 
 			let literalString = node.StringLiteral[0].image
@@ -338,24 +258,24 @@ function parseJava(document, diagnostics) {
 			}
 
 			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of relative XPath.")
 			}
-			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/') {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
+			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of absolute XPath.")
 			}
 			if (literalString.startsWith("css")) {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", literalString)
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", literalString)
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of CSS locator.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", "Use of CSS locator.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of CSS locator.")
 			}
 
 			/* Recur on inner string */
@@ -396,35 +316,7 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclaration(node) {
-			let state = {isFixtureMethod: false}
-			super.methodDeclaration(node, state)
-		}
-
-		methodModifier(node, state) {
-			state.imInMethodModifier = true
-			super.methodModifier(node, state)
-		}
-
-		annotation(node, state) {
-			if (!state || !state.imInMethodModifier) {
-				super.annotation(node)
-				return
-			}
-
-			let annotationName = getChild(node.typeName).Identifier[0].image
-
-			if (annotationName == 'After' || annotationName == 'Before') {
-				state.isFixtureMethod = true
-			}
-		}
-
-		methodDeclarator(node, pastState) {
-			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
-				super.methodDeclarator(node)
-				return 
-			}
-
+		methodDeclarator(node) {
 			let testCaseName = node.Identifier[0].image
 
 			if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
@@ -441,35 +333,7 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclaration(node) {
-			let state = {isFixtureMethod: false}
-			super.methodDeclaration(node, state)
-		}
-
-		methodModifier(node, state) {
-			state.imInMethodModifier = true
-			super.methodModifier(node, state)
-		}
-
-		annotation(node, state) {
-			if (!state || !state.imInMethodModifier) {
-				super.annotation(node)
-				return
-			}
-
-			let annotationName = getChild(node.typeName).Identifier[0].image
-
-			if (annotationName == 'After' || annotationName == 'Before') {
-				state.isFixtureMethod = true
-			}
-		}
-
-		methodBody(node, pastState) {
-			if (pastState && pastState.isFixtureMethod) { // if it is a fixture method, skip it
-				super.methodDeclarator(node)
-				return 
-			}
-
+		methodBody(node) {
 			let state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: getLocation(node.block).startOffset, endOffset: getLocation(node.block).endOffset }, imInBody: true }
 			super.methodBody(node, state)
 
@@ -676,7 +540,7 @@ function parseJava(document, diagnostics) {
 	})
 }
 
-function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, tokenValue) {
+function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, specificMessage) {
 	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
 	if (!recommendation) {
 		console.error(`Could not find recommendation ${recommendationId}. Skipping it.`)
@@ -687,7 +551,8 @@ function addDiagnostic(document, diagnostics, startOffset, endOffset, recommenda
 				startOffset,
 				endOffset,
 				recommendation.id,
-				recommendation.message(tokenValue)
+				recommendation.message,
+				specificMessage
 			)
 		)
 	}
@@ -724,7 +589,7 @@ function parseJavascript(document, diagnostics) {
 							node.declarations.length == 1 ? node.start : diagnosedNode.start + declaration.start,
 							node.declarations.length == 1 ? node.end : diagnosedNode.end + declaration.start,
 							recommendations[6].id,
-							recommendations[6].message(diagnosedNode.name)
+							recommendations[6].message
 						)
 					);
 				});
@@ -750,7 +615,7 @@ function parseJavascript(document, diagnostics) {
 							diagnosedNode.start + node.start,
 							diagnosedNode.end + node.start,
 							recommendations[2].id,
-							recommendations[2].message(diagnosedNode.name)
+							recommendations[2].message
 						)
 					);
 				});
@@ -764,7 +629,7 @@ function parseJavascript(document, diagnostics) {
 							diagnosedNode.start + node.start,
 							diagnosedNode.end + node.start,
 							recommendations[3].id,
-							recommendations[3].message(diagnosedNode.name)
+							recommendations[3].message
 						)
 					);
 				});
@@ -778,7 +643,7 @@ function parseJavascript(document, diagnostics) {
 							diagnosedNode.start + node.start,
 							diagnosedNode.end + node.start,
 							recommendations[4].id,
-							recommendations[4].message(diagnosedNode.name)
+							recommendations[4].message
 						)
 					);
 				});
@@ -792,7 +657,7 @@ function parseJavascript(document, diagnostics) {
 							diagnosedNode.start + node.start,
 							diagnosedNode.end + node.start,
 							recommendations[5].id,
-							recommendations[5].message(diagnosedNode.name)
+							recommendations[5].message
 						)
 					);
 				});
@@ -807,7 +672,7 @@ function parseJavascript(document, diagnostics) {
 							diagnosedNode.start + node.start,
 							diagnosedNode.end + node.start,
 							recommendations[4].id,
-							recommendations[4].message(diagnosedNode.name)
+							recommendations[4].message
 						)
 					);
 				});
@@ -827,7 +692,7 @@ function parseJavascript(document, diagnostics) {
 						diagnosedNode.start + node.start,
 						diagnosedNode.end + node.start + 3,
 						recommendations[0].id,
-						recommendations[0].message(diagnosedNode.value)
+						recommendations[0].message
 					)
 				);
 			});
@@ -840,7 +705,7 @@ function parseJavascript(document, diagnostics) {
 						diagnosedNode.start + node.start,
 						diagnosedNode.end + node.start + 3,
 						recommendations[1].id,
-						recommendations[1].message(diagnosedNode.value)
+						recommendations[1].message
 					)
 				);
 			});
@@ -850,7 +715,7 @@ function parseJavascript(document, diagnostics) {
 	walker.recursive(root, null, customVisitor, walker.base);
 }
 
-function buildDiagnostic(document, start, end, code, message) {
+function buildDiagnostic(document, start, end, code, message, specificMessage) {
 	let diagnostic = new vscode.Diagnostic(
 		new vscode.Range(document.positionAt(start), document.positionAt(end)),
 		message,
@@ -859,15 +724,18 @@ function buildDiagnostic(document, start, end, code, message) {
 
 	diagnostic.code = code
 	diagnostic.source = 'Fragility linter'
-	/* diagnostic.relatedInformation =  relatedInformation: [
-		new vscode.DiagnosticRelatedInformation(
-			new vscode.Location(
-				document.uri,
-				new vscode.Range(new vscode.Position(1, 8), new vscode.Position(1, 9))
-			),
-			'first assignment to `x`'
-		)
-	] */
+	if (specificMessage) {
+		diagnostic.relatedInformation = [
+			new vscode.DiagnosticRelatedInformation(
+				new vscode.Location(
+					document.uri,
+					new vscode.Range(document.positionAt(start), document.positionAt(end))
+				),
+				specificMessage
+			)
+		]
+	}
+	
 
 	return diagnostic
 }
