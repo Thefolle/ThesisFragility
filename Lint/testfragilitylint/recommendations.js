@@ -3,6 +3,13 @@ const walker = require('acorn-node/walk')
 
 const javaParser = require('java-parser')
 
+const TestSuite = 0
+const TestCase = 1
+const Snippet = 2
+const Statement = 3
+const Literal = 4
+const Unclassified = 5
+
 const recommendations = [
     {
         id: "TODO",
@@ -266,109 +273,137 @@ const recommendations = [
     },
     {
         id: "R.W.0",
-        message: (tokenValue) => ``
+        message: (tokenValue) => ``,
+        scope: Unclassified
     },
     {
         id: "R.W.1",
-        message: (tokenValue) => `XPath locators relative to an element found by id come up to be more robust than absolute ones: for instance, //*[@id="fox"]/a.`
+        message: (tokenValue) => `XPath locators relative to an element found by id come up to be more robust than absolute ones: for instance, //*[@id="fox"]/a.`,
+        scope: Literal
     },
     {
         id: "R.W.2",
-        message: (tokenValue) => `Locators by id allow to pick up an element in the fastest way.`
+        message: (tokenValue) => `Locators by id allow to pick up an element in the fastest way.`,
+        scope: Literal
     },
     {
         id: "R.W.3",
         message: (tokenValue) => `Ids and names of elements should reflect their functional purpose so as to lower the probability they get changed; additionally, they would be more readable.
-        If an element is not directly involved in a use case, like containers, their ids or names should be generic.`
+        If an element is not directly involved in a use case, like containers, their ids or names should be generic.`,
+        scope: Literal
     },
     {
         id: "R.W.4",
-        message: (tokenValue) => `Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.`
+        message: (tokenValue) => `Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.`,
+        scope: Literal
     },
     {
         id: "R.W.5",
-        message: (tokenValue) => `Predictable locators by id help in writing robust tests for dynamically-populated lists.`
+        message: (tokenValue) => `Predictable locators by id help in writing robust tests for dynamically-populated lists.`,
+        scope: Literal
     },
     {
         id: "R.W.6",
-        message: (tokenValue) => `XPath locators are slow and so they may break test cases, which in turn increases fragility.`
+        message: (tokenValue) => `XPath locators are slow and so they may break test cases, which in turn increases fragility.`,
+        scope: Literal
     },
     {
         id: "R.W.7",
-        message: (tokenValue) => `XPath locators are more vulnerable to UI changes, fact that augments test maintenance.`
+        message: (tokenValue) => `XPath locators are more vulnerable to UI changes, fact that augments test maintenance.`,
+        scope: Literal
     },
     {
         id: "R.W.8.0",
-        message: (tokenValue) => `Integration tests must be developed before unit tests along the lifecycle of a test suite, due to their wider coverage applying a given effort. Unit tests, if built first, could lead developers to abandon them due to a scarce availability at the beginning of the project.`
+        message: (tokenValue) => `Integration tests must be developed before unit tests along the lifecycle of a test suite, due to their wider coverage applying a given effort. Unit tests, if built first, could lead developers to abandon them due to a scarce availability at the beginning of the project.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.1",
-        message: (tokenValue) => `Test names must contain three parts: what is being tested, under which circumstances and what's the expected result. Follow the pattern: When <circumstances>, then <expected result>`
+        message: (tokenValue) => `Test names must contain three parts: what is being tested, under which circumstances and what's the expected result. Follow the pattern: When <circumstances>, then <expected result>`,
+        scope: TestCase
     },
     {
         id: "R.W.8.2",
-        message: (message) => `${message} Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.`
+        message: (message) => `${message} Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.3",
-        message: (tokenValue) => `The fragility-related recommendations of this document may be indirectly enforced by linting the code against other types of good practices.`
+        message: (tokenValue) => `The fragility-related recommendations of this document may be indirectly enforced by linting the code against other types of good practices.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.4",
-        message: (tokenValue) => `Even better, the linter should be run for every key that the tester presses to avoid subsequent modifications.`
+        message: (tokenValue) => `Even better, the linter should be run for every key that the tester presses to avoid subsequent modifications.`,
+        scope: Unclassified
     },
     {
         id: "R.W.8.5",
-        message: (tokenValue) => `Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope.`
+        message: (tokenValue) => `Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.6",
-        message: (message) => `${message} Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.`
+        message: (message) => `${message} Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.7",
-        message: (tokenValue) => `One step further, test cases must not access the same data from the test DB; restore the DB state after each test.`
+        message: (tokenValue) => `One step further, test cases must not access the same data from the test DB; restore the DB state after each test.`,
+        scope: TestSuite
     },
     {
         id: "R.W.8.8",
-        message: (tokenValue) => `Creating a new web driver instance per each test case ensures test isolation and easier parallelization.`
+        message: (tokenValue) => `Creating a new web driver instance per each test case ensures test isolation and easier parallelization.`,
+        scope: TestCase
     },
     {
         id: "R.W.8.9",
-        message: (tokenValue) => `Running only a subset of the test cases save effort. Tagging tests having a common attribute and running only those tests lower the test run time.`
+        message: (tokenValue) => `Running only a subset of the test cases save effort. Tagging tests having a common attribute and running only those tests lower the test run time.`,
+        scope: TestSuite
     },
     {
         id: "R.W.9",
-        message: (message) => `${message} Keeping test cases decoupled from each other and from the context reduces fragility against any type of modification.`
+        message: (message) => `${message} Keeping test cases decoupled from each other and from the context reduces fragility against any type of modification.`,
+        scope: TestSuite
     },
     {
         id: "R.W.10",
-        message: (tokenValue) => `Sections on data setup, actions and assertions must be as short as possible. This approach minimizes the fragility of test cases. Long test cases instead are expensive to run and poorly debuggable since the fault is more difficult to trace back.`
+        message: (message) => `${message} Sections on data setup, actions and assertions must be as short as possible. Long test cases are instead expensive to run and poorly debuggable since an eventual fault is more difficult to trace back.`,
+        scope: TestCase
     },
     {
         id: "R.W.11",
-        message: (tokenValue) => `The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the AUT exposes.`
+        message: (tokenValue) => `The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the AUT exposes.`,
+        scope: Snippet
     },
     {
         id: "R.W.12",
-        message: (tokenValue) => `Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.`
+        message: (tokenValue) => `Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.`,
+        scope: TestSuite
     },
     {
         id: "R.W.13",
-        message: (tokenValue) => `Third-party libraries and services decrease the stability of tests.`
+        message: (tokenValue) => `Third-party libraries and services decrease the stability of tests.`,
+        scope: TestSuite
     },
     {
         id: "R.W.14",
-        message: (tokenValue) => `No test case should continue the workflow of other tests; instead, when the tester decides to split a use case in many test cases, each test case but the first one must rather stub the preceding scenario with a proper test setup.`
+        message: (tokenValue) => `No test case should continue the workflow of other tests; instead, when the tester decides to split a use case in many test cases, each test case but the first one must rather stub the preceding scenario with a proper test setup.`,
+        scope: TestCase
     },
     {
         id: "R.W.15",
-        message: (tokenValue) => `Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.`
+        message: (tokenValue) => `Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.`,
+        scope: Unclassified
     },
     {
         id: "R.W.16",
-        message: (tokenValue) => `Id locators are the most robust choice; when they are not available, CSS locators should be selected; as last resort, XPaths can be chosen.`
+        message: (tokenValue) => `Id locators are the most robust choice; when they are not available, CSS locators should be selected; as last resort, XPaths can be chosen.`,
+        scope: Literal
     }
 ]
+
+
 
 exports.recommendations = recommendations

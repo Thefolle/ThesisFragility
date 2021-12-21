@@ -14,7 +14,14 @@
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": []
+    "commands": [
+      {
+        "command": "Activate",
+        "title": "Lint Test Case for Fragility",
+        "category": "Lint",
+        "shortTitle": "Lint for Fragility"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",

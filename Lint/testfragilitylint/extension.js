@@ -1,17 +1,14 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-// const lexer = require('chain-lexer'); this lexer works for C and SQL only
-//let lexr = require('lexr');
-//let jsLexer = new lexr.Tokenizer("Javascript"); this lexer has scope bugs
-//const lexer4js = require('lexer4js') // doesn't recognize the require keyword
-//const lexer = new lexer4js.Lexer()
+
 const acorn = require('acorn-node');
 const walker = require('acorn-node/walk')
 
 const javaParser = require('java-parser')
 
 const { recommendations } = require('./recommendations');
+const internal = require('stream');
 
 
 
@@ -29,11 +26,13 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 
-	// let disposable = vscode.commands.registerCommand('testfragilitylint.showTimestamp', function () {
-	// 	vscode.window.showWarningMessage(Date.now().toString())
-	// })
+	let disposable = vscode.commands.registerCommand('Activate', function () {
+		//vscode.window.showWarningMessage(Date.now().toString())
+	})
 
-	// context.subscriptions.push(disposable);
+	context.subscriptions.push(disposable);
+
+	//vscode.workspace.
 
 	/* vscode.languages.registerHoverProvider('javascript', {
 		provideHover(document, position, token) {
@@ -44,6 +43,10 @@ function activate(context) {
 			}
 		}
 	}) */
+
+	// TODO: onDidChangeTextDocument, so as to refresh while coding (or also saving)
+	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, vscode.languages.createDiagnosticCollection('diagnosticCollection')))
+	context.subscriptions.push(openTextDocumentListener)
 
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
 	context.subscriptions.push(collection)
@@ -67,15 +70,23 @@ function updateDiagnostics(document, collection) {
 		} else if (language == 'javascript') {
 			parseJavascript(document, diagnostics);
 		} else {
-			console.error(`The ${language} language is not supported.`)
+			console.error(`The ${language} language is not supported: ${document.fileName}.`)
 			collection.clear()
 			return
 		}
 
 		console.log("Diagnostics have been collected.")
 
-		if (diagnostics.length > 0)
+		if (diagnostics.length > 0) {
+			// prioritize diagnostics by narrowing scope
+			diagnostics.sort((diagnostic1, diagnostic2) => {
+				let scope1 = recommendations.find(recommendation => recommendation.id == diagnostic1.code).scope
+				let scope2 = recommendations.find(recommendation => recommendation.id == diagnostic2.code).scope
+				return scope1 - scope2
+			})
+
 			collection.set(document.uri, diagnostics);
+		}
 		else collection.clear()
 	} else {
 		collection.clear();
@@ -628,7 +639,26 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4(), new Visitor5(), new Visitor6()]
+	let Visitor7 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super();
+			this.validateVisitor();
+		}
+
+		methodBody(node) {
+			let testCaseLength = getChild(getChild(node.block).blockStatements).blockStatement.length
+
+			if (testCaseLength > 15) { // Magic number: need further research
+				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, getLocation(node.block).endOffset, "R.W.10", "The test case is too long.")
+			}
+
+			super.methodBody(node)
+		}
+
+	}
+
+	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4(), new Visitor5(), new Visitor6(),
+		new Visitor7()]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			visitor.visit(root)
@@ -844,7 +874,10 @@ function buildDiagnostic(document, start, end, code, message) {
 
 
 // this method is called when your extension is deactivated
-function deactivate() { }
+function deactivate() {
+	console.log("Deactivated")
+	return undefined // must return this value if deallocation is synchronous
+}
 
 module.exports = {
 	activate,
