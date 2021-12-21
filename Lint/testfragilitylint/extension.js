@@ -42,12 +42,13 @@ function activate(context) {
 		}
 	}) */
 
-	// TODO: onDidChangeTextDocument, so as to refresh while coding (or also saving)
-	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, vscode.languages.createDiagnosticCollection('diagnosticCollection')))
-	context.subscriptions.push(openTextDocumentListener)
 
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
 	context.subscriptions.push(collection)
+
+	// TODO: onDidChangeTextDocument, so as to refresh while coding (or also saving)
+	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, collection))
+	context.subscriptions.push(openTextDocumentListener)
 
 	if (vscode.window.activeTextEditor) {
 		updateDiagnostics(vscode.window.activeTextEditor.document, collection);
@@ -68,8 +69,8 @@ function updateDiagnostics(document, collection) {
 		} else if (language == 'javascript') {
 			parseJavascript(document, diagnostics);
 		} else {
-			console.error(`The ${language} language is not supported: ${document.fileName}.`)
-			collection.clear()
+			//console.error(`The ${language} language is not supported: ${document.fileName}.`)
+			//collection.clear()
 			return
 		}
 
@@ -85,9 +86,9 @@ function updateDiagnostics(document, collection) {
 
 			collection.set(document.uri, diagnostics);
 		}
-		else collection.clear()
+		else collection.set(document.uri, [])
 	} else {
-		collection.clear();
+		collection.set(document.uri, []);
 	}
 }
 
@@ -566,7 +567,6 @@ function getLocation(node) {
 	return node[0].location
 }
 
-
 function parseJavascript(document, diagnostics) {
 	let root = acorn.Parser.parse(document.getText());
 
@@ -743,7 +743,7 @@ function buildDiagnostic(document, start, end, code, message, specificMessage) {
 
 // this method is called when your extension is deactivated
 function deactivate() {
-	console.log("Deactivated")
+	console.log("Extension deactivated")
 	return undefined // must return this value if deallocation is synchronous
 }
 
