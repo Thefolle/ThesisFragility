@@ -21,6 +21,12 @@
         "title": "Lint Test Case for Fragility",
         "category": "Lint",
         "shortTitle": "Lint for Fragility"
+      },
+      {
+        "command": "Generate Report",
+        "title": "Generate Report for the Current File",
+        "category": "Lint",
+        "shortTitle": "Report"
       }
     ]
   },

@@ -24,11 +24,11 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 
-	let disposable = vscode.commands.registerCommand('Activate', function () {
-		//vscode.window.showWarningMessage(Date.now().toString())
+	let activateCommand = vscode.commands.registerCommand('Activate', function () {
+		/* Do nothing. A command's callback must be defined even if it is empty. */
 	})
 
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(activateCommand);
 
 	//vscode.workspace.
 
@@ -50,9 +50,31 @@ function activate(context) {
 	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, collection))
 	context.subscriptions.push(openTextDocumentListener)
 
+	let generateReportCommand = vscode.commands.registerCommand('Generate Report', function () {
+		if (!vscode.window.activeTextEditor) {
+			vscode.window.showInformationMessage("No text editor has focus. Please, open a file and issue the command again.")
+			return
+		}
+
+		let document = vscode.window.activeTextEditor.document
+		if (!supportLanguage(document.languageId)) {
+			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
+		}
+		let diagnostics = collection.get(document.uri)
+		generateReport(document, diagnostics)
+	})
+	context.subscriptions.push(generateReportCommand)
+
 	if (vscode.window.activeTextEditor) {
 		updateDiagnostics(vscode.window.activeTextEditor.document, collection);
 	}
+
+}
+
+// this method is called when your extension is deactivated
+function deactivate() {
+	console.log("Extension deactivated")
+	return undefined // must return this value if deallocation is synchronous
 }
 
 /**
@@ -64,14 +86,12 @@ function updateDiagnostics(document, collection) {
 		let language = document.languageId;
 		let diagnostics = []
 
+		if (!supportLanguage(language)) return
+
 		if (language == 'java') {
 			parseJava(document, diagnostics)
 		} else if (language == 'javascript') {
 			parseJavascript(document, diagnostics);
-		} else {
-			//console.error(`The ${language} language is not supported: ${document.fileName}.`)
-			//collection.clear()
-			return
 		}
 
 		console.log("Diagnostics have been collected.")
@@ -90,6 +110,20 @@ function updateDiagnostics(document, collection) {
 	} else {
 		collection.set(document.uri, []);
 	}
+}
+
+function supportLanguage(actualLanguage) {
+	if (['java', 'javascript'].includes(actualLanguage)) return true
+	else return false
+}
+
+function generateReport(document, diagnostics) {
+	let reportUri = vscode.Uri.joinPath(document.uri, "..", "Report.json")
+	let workspaceEdit = new vscode.WorkspaceEdit()
+	
+	workspaceEdit.createFile(reportUri, {overwrite: true, ignoreIfExists: false})
+	workspaceEdit.insert(reportUri, new vscode.Position(0, 0), JSON.stringify(diagnostics))
+	vscode.workspace.applyEdit(workspaceEdit)
 }
 
 function parseJava(document, diagnostics) {
@@ -264,16 +298,14 @@ function parseJava(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", "Use of relative XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", "Use of relative XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of relative XPath.")
-			}
-			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
+			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.6", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of absolute XPath.")
-			}
-			if (literalString.startsWith("css")) {
+			} else if (literalString.startsWith("css") || literalString.includes('#') || literalString.includes('>')) {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.4", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.16", "Use of CSS locator.")
@@ -541,32 +573,6 @@ function parseJava(document, diagnostics) {
 	})
 }
 
-function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, specificMessage) {
-	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
-	if (!recommendation) {
-		console.error(`Could not find recommendation ${recommendationId}. Skipping it.`)
-	} else {
-		diagnostics.push(
-			buildDiagnostic(
-				document,
-				startOffset,
-				endOffset,
-				recommendation.id,
-				recommendation.message,
-				specificMessage
-			)
-		)
-	}
-}
-
-function getChild(node) {
-	return node[0].children
-}
-
-function getLocation(node) {
-	return node[0].location
-}
-
 function parseJavascript(document, diagnostics) {
 	let root = acorn.Parser.parse(document.getText());
 
@@ -680,6 +686,39 @@ function parseJavascript(document, diagnostics) {
 
 			// @ts-ignore
 			walker.base.Identifier(node, state, c)
+		}
+	})
+
+	let Visitor3 = walker.make({
+		Literal(node, state, c) {
+			if (!(typeof node.value === 'string' || node.value instanceof String)) {
+				// @ts-ignore
+				walker.base.Literal(node, null, c)
+				return
+			}
+			let literalString = node.value
+
+			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.4", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.6", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.7", "Use of relative XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of relative XPath.")
+			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.1", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.4", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.6", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.7", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of absolute XPath.")
+			} else if (literalString.startsWith("css") || literalString.includes('#') || literalString.includes('>')) { // The # character also denotes fragments in URLs
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of CSS locator.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.4", "Use of CSS locator.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of CSS locator.")
+			}
+
+			// @ts-ignore
+			walker.base.Literal(node, null, c)
 		}
 	})
 
@@ -820,7 +859,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	});
 
-	let visitors = [Visitor1, Visitor2]
+	let visitors = [Visitor1, Visitor2, Visitor3]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			walker.recursive(root, null, visitor, walker.base)
@@ -836,8 +875,33 @@ function parseJavascript(document, diagnostics) {
 		/* Probable parsing error */
 		console.error(err)
 	})
-
 	
+}
+
+function getChild(node) {
+	return node[0].children
+}
+
+function getLocation(node) {
+	return node[0].location
+}
+
+function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, specificMessage) {
+	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
+	if (!recommendation) {
+		console.error(`Could not find recommendation ${recommendationId}. Skipping it.`)
+	} else {
+		diagnostics.push(
+			buildDiagnostic(
+				document,
+				startOffset,
+				endOffset,
+				recommendation.id,
+				recommendation.message,
+				specificMessage
+			)
+		)
+	}
 }
 
 function buildDiagnostic(document, start, end, code, message, specificMessage) {
@@ -866,11 +930,6 @@ function buildDiagnostic(document, start, end, code, message, specificMessage) {
 }
 
 
-// this method is called when your extension is deactivated
-function deactivate() {
-	console.log("Extension deactivated")
-	return undefined // must return this value if deallocation is synchronous
-}
 
 module.exports = {
 	activate,
