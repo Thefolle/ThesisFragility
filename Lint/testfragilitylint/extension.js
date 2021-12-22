@@ -575,6 +575,114 @@ function parseJavascript(document, diagnostics) {
 		globalVariableIdentifiers: []
 	};
 
+	let Visitor1 = walker.make({
+		CallExpression(node, junkState, c) {
+			if (node.callee.name != 'it') {
+				// @ts-ignore
+				walker.base.CallExpression(node, junkState, c)
+				return
+			}
+
+			let state = { imInTestCase: true, localVariables: [], firstStatementStartingOffset: node.arguments[1].body.end, driverVariable: null }
+			
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+
+			/* if there is no setup section or the driver variable is not declared locally */
+			if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.name).includes(state.driverVariable))) {
+				// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
+				addDiagnostic(document, diagnostics, node.arguments[1].body.start, node.arguments[1].body.body[0].start, "R.W.8.8")
+			}
+		},
+
+		VariableDeclaration(node, state, c) {
+			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
+				// @ts-ignore
+				walker.base.VariableDeclaration(node, null, c)
+				return 
+			}
+
+			node.declarations.forEach(declaration => {
+				state.localVariables.push(declaration.id)
+			})
+			
+			// @ts-ignore
+			walker.base.VariableDeclaration(node, state, c)
+		},
+
+		MemberExpression(node, state, c) {
+			if (!state || !state.imInTestCase || state.driverVariable) { // If the state is undefined, the node is outside a method body
+				// @ts-ignore
+				walker.base.MemberExpression(node, null, c)
+				return
+			} else if (node.object.type != 'Identifier') { // for instance, node.object.type == 'CallExpression'
+				// @ts-ignore
+				walker.base.MemberExpression(node, state, c)
+				return
+			}
+
+			let reference = node.object.name
+			let calledMethod = node.property.name
+
+			if (calledMethod.toLowerCase().includes("get") || calledMethod.toLowerCase().includes("click") || calledMethod.toLowerCase().includes("findelement")) {
+				state.driverVariable = reference
+			}
+
+			// @ts-ignore
+			walker.base.MemberExpression(node, state, c)
+		}
+
+	})
+
+	let Visitor2 = walker.make({
+		Program(node, junkState, c) {
+			let state = {globalVariables: []}
+			// @ts-ignore
+			walker.base.Program(node, state, c)
+		},
+
+		CallExpression(node, state, c) {
+			if (node.callee.name != 'it') {
+				// @ts-ignore
+				walker.base.CallExpression(node, state, c)
+				return
+			}
+
+			state.imInTestCase = true
+			state.localVariables = []
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+
+			state.imInTestCase = false
+		},
+
+		VariableDeclarator(node, state, c) {
+			if (!state.imInTestCase) {
+				state.globalVariables.push(node.id.name)
+			} else {
+				state.localVariables.push(node.id.name)
+			}
+
+			// @ts-ignore
+			walker.base.VariableDeclarator(node, state, c)
+		},
+
+		Identifier(node, state, c) {
+			if (!state.imInTestCase) {
+				// @ts-ignore
+				walker.base.Identifier(node, state, c)
+				return
+			}
+
+			if (state.globalVariables.includes(node.name) && !state.localVariables.includes(node.name)) {
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8.5")
+			}
+
+			// @ts-ignore
+			walker.base.Identifier(node, state, c)
+		}
+	})
+
 	// TODO: collect global variables separately to support hoisting
 	let customVisitor = walker.make({
 		VariableDeclaration: (node, state, c) => {
@@ -712,7 +820,24 @@ function parseJavascript(document, diagnostics) {
 		}
 	});
 
-	walker.recursive(root, null, customVisitor, walker.base);
+	let visitors = [Visitor1, Visitor2]
+	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
+		try {
+			walker.recursive(root, null, visitor, walker.base)
+			resolve(undefined)
+		} catch (e) {
+			reject(e)
+		}
+	}))
+
+	Promise.all(promises).then(res =>
+		undefined
+	).catch(err => {
+		/* Probable parsing error */
+		console.error(err)
+	})
+
+	
 }
 
 function buildDiagnostic(document, start, end, code, message, specificMessage) {

@@ -294,7 +294,7 @@ const recommendations = [
     },
     {
         id: "R.W.4",
-        message: `Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.`,
+        message: `Locators by id help in building more stable test cases, since they break less likely when a change in the application occurs.`,
         scope: Literal
     },
     {
@@ -340,7 +340,7 @@ const recommendations = [
     {
         id: "R.W.8.5",
         message: `Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope.`,
-        scope: TestSuite
+        scope: TestCase
     },
     {
         id: "R.W.8.6",
@@ -374,7 +374,7 @@ const recommendations = [
     },
     {
         id: "R.W.11",
-        message: `The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the AUT exposes.`,
+        message: `The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the application exposes.`,
         scope: Snippet
     },
     {

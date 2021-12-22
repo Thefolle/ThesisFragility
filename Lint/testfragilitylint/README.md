@@ -1,4 +1,4 @@
-# testfragilitylint README
+# FragilityLint
 
 <!-- This is the README for your extension "testfragilitylint". After writing up a brief description, we recommend including the following sections. -->
 
@@ -18,7 +18,7 @@ For example if there is an image subfolder under your extension project workspac
 
 FragilityLint inspects test cases and show fragility-related code smells by underlining the interested snippet.
 
-![Probing code smells](<./images/ProbingCodeSmells.png>)
+![Probing code smells](file:///C:/Users/Acer/Desktop/Studio/Tesi/Lint/testfragilitylint/images/ProbingCodeSmells.png)
 
 Each bad practice is linked to a describing tooltip that appears when you hover the mouse over it.
 
