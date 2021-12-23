@@ -4,20 +4,17 @@
 
 Source: S.W.0
 
-### Recommendation R.W.0.0
+The testing pyramid shows the recommended proportion in the number of end-to-end test cases w.r.t. lower-level tests. The reason is that, moving updwards in the pyramid, there are issues like:
 
-The cause of fragility is traced back to the volatility of test cases, which increases as they cover more features of the AUT, as written:
-> Low-level tests are faster and more stable
+- Test fragility (tests that break easily and unexpectedly, even when changes shouldn't have influenced the test);
+- Longer feedback time;
+- Increased effort levels;
+- Higher costs to implementation;
+- More specialized knowledge required.
 
-### Recommendation R.W.0.1
+Contract: keep the number of unit tests greater than the number of end-to-end tests.
 
-Lower-level tests are more fragile since they depend upon implementation details.
-
-### Discussion to select the admissible recommendation
-
-Current tools for visual testing hide most implementation details to end users, so R.W.0.0 gets consequently discarded in favor of R.W.0.1.
-
-See also: R.W.8.1
+See also: R.W.11.0
 
 ## Recommendation R.W.1
 
@@ -25,78 +22,125 @@ Source: S.W.2
 
 XPath locators relative to an element found by id come up to be more robust than absolute ones: for instance, //*[@id="fox"]/a.
 
+Contract: use relative XPath locators in place of absolute XPath locators.
+
 ## Recommendation R.W.2
 
 Source: S.W.2
 
-Locators by id allow to pick up an element in the fastest way.
+Locators by id allow to pick up an element in the fastest way. This fact adds value to a test case, which then has less probability to get deleted.
+
+Contract: use locators by id since they are the fastest locators.
 
 ## Recommendation R.W.3
 
-Source: S.W.3
+Source: S.W.2
 
-Ids and names of elements should reflect their functional purpose so as to lower the probability they get changed; additionally, they would be more readable.
-If an element is not directly involved in a use case, like containers, their ids or names should be generic.
+Contract: use locators by id due to their high readability.
 
 ## Recommendation R.W.4
 
-Source: S.W.4
+Source: S.W.3.0
 
-Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.
+Ids and names of elements should reflect their functional purpose so as to lower the probability they get changed. Ids must be meaningful and should not convey a presentational purpose. Additionally, they would be more readable.
+If an element is not directly involved in a use case, like containers, their ids or names should be generic.
+
+Contract: give to an element an id that mirrors its functional purpose. When an element has no particular meaning, give it a generic id.
 
 ## Recommendation R.W.5
 
-Source: S.W.4
+Source: S.W.3.1
 
-Predictable locators by id help in writing robust tests for dynamically-populated lists.
+Contract: give to elements a name that mirrors their functional purpose. When an element has no particular meaning, give it a generic name.
+
+See also: R.W.4
 
 ## Recommendation R.W.6
 
-Source: S.W.4
+Source: S.W.3.2
 
-XPath locators are slow and so they may break test cases, which in turn increases fragility.
+Do not concatenate words and abbreviations in selectors by any characters (including none at all) other than hyphens, in order to improve understanding and scannability.
+
+Contract: separate words in ID and class names by a hyphen.
 
 ## Recommendation R.W.7
 
 Source: S.W.4
 
-XPath locators are more vulnerable to UI changes, fact that augments test maintenance.
+Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.
 
-## Recommendations R.W.8
+Contract: use locators by id since they are more robust than other types of locator.
 
-Node.js recommendations are curated and revisioned by the respective authors and by the Node team, so they do not require additional analysis here.
-Each best practice is sometimes further explained in a page apart, which is not reported here for the sake of brevity.
+## Recommendation R.W.8
 
-## Recommendation R.W.8.0
+Source: S.W.4
+
+Predictable locators by id help in writing tests for dynamically-populated lists, whose tests are typically hard to maintain.
+
+Contract: use locators by id to ease tests that build lists of elements at runtime.
+
+## Recommendation R.W.9
+
+Source: S.W.4
+
+XPath locators are slow and so they may break test cases that make use of timeouts, increasing their fragility.
+
+Contract: do not use XPath locators as they may break tests that rely upon timeouts.
+
+## Recommendation R.W.10
+
+Source: S.W.4
+
+XPath locators are more vulnerable to UI changes than ids, fact that augments test maintenance.
+
+Contract: prefer id than XPath locators since they require less maintenance.
+
+## Recommendations R.W.11
+
+Node.js recommendations are curated and revisioned by the respective authors and by the Node community, so they do not require additional analysis here, quite a summary and a contract.
+Each best practice is sometimes further explained in a web page apart, which is not reported here for the sake of brevity.
+
+## Recommendation R.W.11.0
 
 Source: S.W.5.0
 
-Integration tests must be developed before unit tests along the lifecycle of a test suite, due to their wider coverage applying a given effort. Unit tests, if built first, could lead developers to abandon them due to a scarce availability at the beginning of the project.
+Integration tests must be developed before unit tests along the lifecycle of a test suite, due to their wider coverage applying a given effort. Unit tests, instead, due to their narrow coverage given the same effort, lead teams to abandon automatic testing, especially at the beginning of the project.
 
-## Recommendation R.W.8.1
+Contract: first write end-to-end tests, then unit tests.
+
+See also: R.W.0
+
+## Recommendation R.W.11.1
 
 Source: S.W.5.1
-
-Test names must contain three parts: what is being tested, under which circumstances and what's the expected result. Follow the pattern: When circumstances, then expected result
 
 When testers write a new test case or when the test suite is getting big, they try to establish a rule to name test cases in a clear and consistent way; this task implies modifications in the test cases and in particular in their name. This recommendation establishes an effective naming rule from the very beginning, avoiding subsequent changes.
 
 If the name of a test case doesn't describe the starting scenario, the developer should infer it by reading the function's body.
 Additionally, clearly stating what's the expected output in advance helps in overcoming the psychological bias that may lead the tester to define by mistake an assertion so as to make the test find no bugs.
 
-## Recommendation R.W.8.2
+Contract: give test cases a name with three sections: what is being tested, under which circumstances and what's the expected result.
+
+So as to help parsers checking this heuristics, they match test names against the pattern: When 'circumstances', then 'expected result'.
+
+## Recommendation R.W.11.2
 
 Source: S.W.5.2, S.W.14
 
-Test cases that share the same execution plan are more robust: setup at first, act at second and assert at the end.
+Arranging each test case in a uniform way saves effort since the mind recognizes the same pattern along the test suite. Saving effort, in turn, decreases the probability that the test case gets abandoned.
 
-Arranging each test case in a standard way, like the proposed one, saves effort since the plan of test cases is uniform along test suites. Saving effort, in turn, decreases the probability that the test case gets abandoned.
+Contract: arrange each test case in three successive sections: setup, act and assert.
 
-## Recommendation R.W.8.3
+## Recommendation R.W.11.3
 
 Source: S.W.5.3
 
-The fragility-related recommendations of this document may be indirectly enforced by linting the code against other types of good practices.
+Linters help in recognizing anti-patterns early. Run them before any test and before the commit so as to minimize the time needed to review code issues.
+The recommendations of this document may be indirectly enforced by linting the code against other types of good practices.
+
+Contract: run linters to detect any anti-pattern.
+
+The exact point in the build process where the linters should be activated is not established as part of the contract.
 
 ## Recommendation R.W.8.4
 
@@ -213,3 +257,11 @@ Source: S.W.6
 The aforementioned properties rise along time. Performing a major refactor or starting a new project from scratch solve the issue; most importantly, the problem can be avoided through awareness thereof.
 
 This recommendation struggles with the principle of robustness proposed in this study. The fact that rigidity and fragility inevitably increase over time define the limits of a strategy that make the test suite more robust.
+
+### Recommendation R.W.1
+
+Source: S.W.1
+
+Since low-level tests depend upon implementation details, their fragility is greater than their high-level counterpart.
+
+Contract: 
