@@ -8,6 +8,7 @@ const walker = require('acorn-node/walk')
 const javaParser = require('java-parser')
 
 const { recommendations } = require('./recommendations');
+const { checkedLocator } = require('selenium-webdriver/lib/by');
 
 
 // this method is called when your extension is activated
@@ -583,7 +584,7 @@ function parseJavascript(document, diagnostics) {
 
 	let Visitor1 = walker.make({
 		CallExpression(node, junkState, c) {
-			if (node.callee.name != 'it') {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
 				// @ts-ignore
 				walker.base.CallExpression(node, junkState, c)
 				return
@@ -648,7 +649,7 @@ function parseJavascript(document, diagnostics) {
 		},
 
 		CallExpression(node, state, c) {
-			if (node.callee.name != 'it') {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
 				// @ts-ignore
 				walker.base.CallExpression(node, state, c)
 				return
@@ -722,6 +723,276 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
+	let Visitor4 = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
+				// @ts-ignore
+				walker.base.CallExpression(node, null, c)
+				return
+			}
+
+			let testCaseName = node.arguments[0].value
+
+			if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.8.1")
+			}
+
+			// @ts-ignore
+			walker.base.CallExpression(node, null, c)
+		}
+	})
+
+	/* This rule has complex heuristics:
+	*	- Selenium can be used to perform visual unit testing, but unit tests are not structured as use cases (see navbar.test.js)
+	*/
+	let Visitor5 = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
+				// @ts-ignore
+				walker.base.CallExpression(node, state, c)
+				return
+			}
+
+			state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: node.arguments[1].body.start, endOffset: node.arguments[1].body.end }, imInBody: true }
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+
+			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
+				/* The test is empty: do nothing */
+			} else if (state.imInFixtureSection && !state.errorFound) {
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.lastStatement.endOffset + 1, "R.W.8.2", "The act section is empty.")
+			} else if (state.imInActSection && !state.errorFound) {
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.lastStatement.endOffset + 1, "R.W.8.2", "The assert section is empty.")
+			}
+
+		},
+
+		// Represent a statement in test cases, even in callback-styled code
+		ExpressionStatement(node, state, c) {
+			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
+				// @ts-ignore
+				walker.base.ExpressionStatement(node, null, c)
+				return
+			}
+
+			state.currentStatement = { startOffset: node.start, endOffset: node.end }
+
+			// @ts-ignore
+			walker.base.ExpressionStatement(node, state, c)
+
+			// this statement must go after the recursive call
+			state.lastStatement = state.currentStatement
+		},
+
+		check(state, statementSection) {
+			if (state.errorFound) return // probe only the first error
+
+			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && statementSection.imInFixtureSection) {
+
+				state.imInFixtureSection = true
+
+			} else if (state.imInFixtureSection && statementSection.imInActSection) {
+
+				state.imInFixtureSection = false
+				state.imInActSection = true
+
+			} else if (state.imInActSection && statementSection.imInAssertSection) {
+				
+				state.imInActSection = false
+				state.imInAssertSection = true
+			
+			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "The setup section is empty.")
+			
+			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "The act section is empty.")
+			
+			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The declaration is inside the act section.")
+			
+			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The setup statement is inside the assert section.")
+			
+			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
+				
+				state.errorFound = true
+				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The act statement is inside the assert section.")
+			
+			}
+		},
+
+		MemberExpression(node, state, c) {
+			if (!state || !state.imInBody) {
+				// @ts-ignore
+				walker.base.MemberExpression(node, null, c)
+				return
+			}
+
+			/* Check for assert section */
+			// the first part of a statement (before the first dot) can either be a variable (like 'driver') or a function call (like 'expect(...)')
+			if (node.object.type == 'Identifier' || (node.object.type == 'CallExpression' && node.object.callee.type == 'Identifier')) {
+				let statementSection = Object.assign({}, state)
+
+				let reference = ""
+				if (node.object.type == 'Identifier') {
+					reference = node.object.name
+				} else {
+					reference = node.object.callee.name
+				}
+
+				console.log(reference)
+				console.log(state)
+
+				if (reference.toLowerCase().includes("assert") || reference.toLowerCase().includes("expect")) {
+					statementSection.imInFixtureSection = false
+					statementSection.imInActSection = false
+					statementSection.imInAssertSection = true
+					this.check(state, statementSection)
+				}
+				
+			}
+
+			// @ts-ignore
+			walker.base.MemberExpression(node, state, c)
+
+			/* Check for act section */
+			if (node.property.type == 'Identifier') {
+				let statementSection = Object.assign({}, state)
+				let calledMethod = node.property.name
+				console.log(`.${calledMethod}`)
+				let matchCalledMethodHeuristic = ['click', 'waitForCondition', 'type', 'find'].some(value => calledMethod.includes(value))  // The 'get' method is part of the fixture section
+				if (matchCalledMethodHeuristic) {
+					statementSection.imInFixtureSection = false
+					statementSection.imInActSection = true
+					statementSection.imInAssertSection = false
+					this.check(state, statementSection)
+				} else if (calledMethod.includes("assert")) {
+					statementSection.imInFixtureSection = false
+					statementSection.imInActSection = false
+					statementSection.imInAssertSection = true
+					this.check(state, statementSection)
+				} else if (calledMethod.includes("get")) {
+					statementSection.imInFixtureSection = true
+					statementSection.imInActSection = false
+					statementSection.imInAssertSection = false
+					this.check(state, statementSection)
+				}
+			}
+
+		},
+
+		VariableDeclaration(node, state, c) {
+			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
+				// @ts-ignore
+				walker.base.VariableDeclaration(node, null, c)
+				return
+			}
+
+			if (node.declarations.length == 1) {
+				state.lastStatement = state.currentStatement
+				state.currentStatement = { startOffset: node.start, endOffset: node.end }
+				state.isJustOneDeclaration = true
+			}
+
+			// @ts-ignore
+			walker.base.VariableDeclaration(node, state, c)
+			state.isJustOneDeclaration = false
+		},
+
+		VariableDeclarator(node, state, c) {
+			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
+				// @ts-ignore
+				walker.base.VariableDeclarator(node, null, c)
+				return
+			}
+
+			let statementSection = Object.assign({}, state)
+
+			console.log(`Declaration: ${node.id.name}`)
+
+			statementSection.imInFixtureSection = true
+			statementSection.imInActSection = false
+			statementSection.imInAssertSection = false
+
+			/* Variable declarations are not considered statements (Expression Statements)*/
+			if (!state.isJustOneDeclaration) {
+				state.lastStatement = state.currentStatement
+				state.currentStatement = { startOffset: node.start, endOffset: node.end }
+			}
+
+			this.check(state, statementSection)
+
+			// @ts-ignore
+			walker.base.VariableDeclarator(node, state, c)
+		}
+
+	})
+
+	let Visitor6 = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.name == 'afterAll' || node.callee.name == 'beforeAll') {
+				addDiagnostic(document, diagnostics, node.start,node.end, "R.W.9", "Usage of setup/tear down method.")
+			}
+
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+		}
+	})
+
+	let Visitor7 = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
+				// @ts-ignore
+				walker.base.CallExpression(node, state, c)
+				return
+			}
+
+			state = {numberOfStatements: 0}
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+
+			if (state.numberOfStatements > 15) {
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "The test case is too long.")
+			}
+
+			state = null
+		},
+
+		ExpressionStatement(node, state, c) {
+			if (!state) {
+				// @ts-ignore
+				walker.base.ExpressionStatement(node, state, c)
+				return
+			}
+
+			state.numberOfStatements++
+
+			// @ts-ignore
+			walker.base.ExpressionStatement(node, state, c)
+		},
+
+		VariableDeclaration(node, state, c) {
+			if (!state) {
+				// @ts-ignore
+				walker.base.VariableDeclaration(node, state, c)
+				return
+			}
+
+			state.numberOfStatements++
+
+			// @ts-ignore
+			walker.base.VariableDeclaration(node, state, c)
+		}
+	})
+
 	// TODO: collect global variables separately to support hoisting
 	let customVisitor = walker.make({
 		VariableDeclaration: (node, state, c) => {
@@ -750,7 +1021,7 @@ function parseJavascript(document, diagnostics) {
 			node.declarations.forEach(declaration => c(declaration, state));
 		},
 		CallExpression: (node, state, c) => {
-			if (node.callee.name == 'it') {
+			if (node.callee.name == 'it' || node.callee.name == 'test') {
 				let testCaseString = document.getText(new vscode.Range(document.positionAt(node.start), document.positionAt(node.end)));
 				//console.log(testCaseString)
 				let result = recommendations[2].contract(testCaseString, context);
@@ -859,7 +1130,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	});
 
-	let visitors = [Visitor1, Visitor2, Visitor3]
+	let visitors = [Visitor1, Visitor2, Visitor3, Visitor4/* , Visitor5 */, Visitor6, Visitor7]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			walker.recursive(root, null, visitor, walker.base)

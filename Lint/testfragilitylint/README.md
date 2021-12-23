@@ -2,7 +2,7 @@
 
 <!-- This is the README for your extension "testfragilitylint". After writing up a brief description, we recommend including the following sections. -->
 
-FragilityLint is a linter for GUI test cases, designed to probe bad practices that determine their fragility. Fragility can be defined as the occurrence of breakages in a test suite in response to a modification in the application.
+FragilityLint is a linter for GUI end-to-end test cases, designed to probe bad practices that determine their fragility. Fragility can be defined as the occurrence of breakages in a test suite in response to a modification in the application.
 
 ## Features
 
