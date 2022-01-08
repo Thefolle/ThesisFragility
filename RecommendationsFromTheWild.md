@@ -14,9 +14,7 @@ As you move higher up the agile testing pyramid, you encounter issues like:
 
 For example, UI tests break easily, often because the UI structure changes over time. Low-level tests are faster and more stable, so this is where we recommend you put the vast majority of your effort. Then, write very few higher-level tests, like end-to-end tests.
 
-## Source S.W.1
-
-Test fragility, in this case, refers to the degree of change necessary for a test suite to accurately find faults on the implementation. Because unit tests are much closer to lower level implementation details of a system they have higher test fragility. If the prospect for the reusability of this test is low, then this can seem like a waste of time. Because unit tests offer a smaller scope of testable behaviors and require more changes to a test. In comparison, integration tests offer a larger scope of testable behaviors and require less changes to a test. Therefore, integration tests can offer higher test quality with lower test fragility than unit tests
+[Improving test quality](https://github.com/uselagoon/lagoon/discussions/2613)
 
 ## Source S.W.2
 
@@ -142,21 +140,29 @@ All of these symptoms has the property of increasing over time, and in order to 
 
 [Signs your software project is rotting](https://github.com/jopheno/CleanArchitecture/wiki/Signs-your-software-project-is-rotting)
 
-## Source S.W.7
-
-Test-driven development also called TDD, is a technic of developing the application side by side with some tests that should verify all functionalities as the development is being made. Using TDD should decrease considerably the amount of bugs that would appear with application changes over time, once a lots of tests will be executed and will test application functions for each change / commit.
-
-Although TDD will reduce the bugs rate, a great amount of time will be needed to write test scripts, and to keep them up to date once changes are being made to the application over time. So, in order to TDD be effective, the tests coverage amount must be high as well as up-to-date.
-
-There are two different approaches of TDD, the inside-out, and the outside-in.
-
-On the inside-out approach, all the small functionalities have tests of their own, this way, it is used to guarantee that each piece of business are working on a tear-down way. On the other hand, on the outside-in approach, more complex tests are made in order to test the whole system interconnected, and the development is made looking forward to pass these more complex tests.
-
-While you can pick one of the approaches, you can also use they both. The inside-out approach is in general for future-proof, once it will not be really dependent on more than one part of the system, however it may not be as accurate as the outside-in approach. In the other hand, a small change in the business of the application will unveil in a great amount of changes on those more complex tests.
-
-[The TDD basics](https://github.com/jopheno/CleanArchitecture/wiki/What's-TDD-and-its-practices%3F)
-
 ## Source S.W.8
+
+A programmer does not have enough working memories in his/her brain to handle the many names, classes, inheritance structure, etc of a large project such as the one I am working on.
+
+A programming paradigm should take into account human 'memory bandwidth'.
+
+Work of Hermann Ebbinghaus -- learning and forgetting curves (1885) and work of George Miller "The Magical Number Seven, Plus or Minus Two" (1956) makes us aware of the fragility of human working memory, and the limited resource we have there in processing new stimuli.
+
+Replace OOP (Object Oriented Programming) with HOP (Human Oriented Programming).
+
+-Must minimize anything that taxes the very limited human working memory.
+
+-This also allows better maintenance by humans with same limited working memory.
+
+-Avoid short variable names but try to use names which allow reader to follow what the variable represents
+
+-Use any sort of database, NOT inheritance, to code relationships
+
+-From point of view of human memory -- DRY (do not repeat yourself) can be good at times
+
+-Ok to allow many and changing variables to participate in an action and share data as long as all is working-memory friendly
+
+-All functions must have built-in unit tests, reflecting weaknesses of human working-memory in evaluating code behavior, even in small decomposed functions
 
 [Working memory limitations](https://github.com/howard8888/pycon-ca-2018/wiki)
 
@@ -171,37 +177,6 @@ function printColor(color) {
 ```
 
 [Global variables induce fragile tests](https://github.com/freudgroup/freudcs/wiki/Javascript-Namespace-Declaration)
-
----
-The book [Antifragile: Things That Gain From Disorder](https://en.wikipedia.org/wiki/Antifragile_(book))
-
-## Source S.W.10
-
-As Humble noted, most IT projects are highly fragile — a few relatively small errors during development or operations can send the entire project crashing down at an inopportune time. IT projects (and individual project releases, for that matter) tend to:
-
-- have giant scopes of hundreds or thousands of requirements.
-- be managed through a series of organizational siloes with weak feedback loops between the silos.
-- introduce new operations vulnerabilities with each release, due to dependence upon manual process steps, and highly context-specific, fragile “scripting.”
-
-Change, therefore, is artificially suppressed, or at least intensely controlled. This just makes projects more fragile in the long term, especially from the perspective of meeting constantly changing business needs.
-
-One solution to that problem is highlighted today in the form of devops or “noops”-driven software organizations like Netflix (s nflx) and Etsy. The software approach these organizations take is one of releasing small changes as often as possible, with heavy reliance on automation, and — this is very important — measuring the resulting effect on dynamics important to the business stakeholders.
-
-Given the difference between devops and most “construction-method” approaches to IT that we see today, for example, I would argue that enterprises should adopt devops and address anti-fragility first by using it for those IT projects that would benefit from continuous change. Ones like marketing applications, business process automation and so on. Less critical would be systems like core ERP databases and infrastructure that don’t often need to undergo change.
-
-[Devops](https://gigaom.com/2013/04/21/great-devops-anti-fragility-and-complexity-resources/)
-
-## Source S.W.11
-
-Some test are made intentionally fragile in order to protect some areas of code from even smallest changes.
-
-[The Magento testing standard](https://github.com/MykolaAkhtyrtsevDev/magento2/wiki/Magento-Automated-Testing-Standard)
-
-## Source S.W.12
-
-Another more commonly encountered form of brittleness is in graphical user interfaces that make invalid assumptions. For example, a user may be running on a low resolution display, and the software will open a window too large to fit the display. Another common problem is expressed when a user uses a color scheme other than the default, causing text to be rendered in the same color as the background, or a user uses a font other than the default, which won't fit in the allowed space and cuts off instructions and labels.
-
-[Software brittleness](https://en.wikipedia.org/wiki/Software_brittleness)
 
 ## Source S.W.13
 
@@ -320,3 +295,53 @@ Start each test from a clean known state. Ideally, spin up a new virtual machine
 
 ---
 [Compatibility between browsers: DesiredCapabilities](https://www.browserstack.com/guide/desired-capabilities-in-selenium-webdriver)
+
+---
+
+## Source S.W.7
+
+Test-driven development also called TDD, is a technic of developing the application side by side with some tests that should verify all functionalities as the development is being made. Using TDD should decrease considerably the amount of bugs that would appear with application changes over time, once a lots of tests will be executed and will test application functions for each change / commit.
+
+Although TDD will reduce the bugs rate, a great amount of time will be needed to write test scripts, and to keep them up to date once changes are being made to the application over time. So, in order to TDD be effective, the tests coverage amount must be high as well as up-to-date.
+
+There are two different approaches of TDD, the inside-out, and the outside-in.
+
+On the inside-out approach, all the small functionalities have tests of their own, this way, it is used to guarantee that each piece of business are working on a tear-down way. On the other hand, on the outside-in approach, more complex tests are made in order to test the whole system interconnected, and the development is made looking forward to pass these more complex tests.
+
+While you can pick one of the approaches, you can also use they both. The inside-out approach is in general for future-proof, once it will not be really dependent on more than one part of the system, however it may not be as accurate as the outside-in approach. In the other hand, a small change in the business of the application will unveil in a great amount of changes on those more complex tests.
+
+[The TDD basics](https://github.com/jopheno/CleanArchitecture/wiki/What's-TDD-and-its-practices%3F)
+
+## Source S.W.10
+
+As Humble noted, most IT projects are highly fragile — a few relatively small errors during development or operations can send the entire project crashing down at an inopportune time. IT projects (and individual project releases, for that matter) tend to:
+
+- have giant scopes of hundreds or thousands of requirements.
+- be managed through a series of organizational siloes with weak feedback loops between the silos.
+- introduce new operations vulnerabilities with each release, due to dependence upon manual process steps, and highly context-specific, fragile “scripting.”
+
+Change, therefore, is artificially suppressed, or at least intensely controlled. This just makes projects more fragile in the long term, especially from the perspective of meeting constantly changing business needs.
+
+One solution to that problem is highlighted today in the form of devops or “noops”-driven software organizations like Netflix (s nflx) and Etsy. The software approach these organizations take is one of releasing small changes as often as possible, with heavy reliance on automation, and — this is very important — measuring the resulting effect on dynamics important to the business stakeholders.
+
+Given the difference between devops and most “construction-method” approaches to IT that we see today, for example, I would argue that enterprises should adopt devops and address anti-fragility first by using it for those IT projects that would benefit from continuous change. Ones like marketing applications, business process automation and so on. Less critical would be systems like core ERP databases and infrastructure that don’t often need to undergo change.
+
+[Devops](https://gigaom.com/2013/04/21/great-devops-anti-fragility-and-complexity-resources/)
+
+## Source S.W.11
+
+Some test are made intentionally fragile in order to protect some areas of code from even smallest changes.
+
+[The Magento testing standard](https://github.com/MykolaAkhtyrtsevDev/magento2/wiki/Magento-Automated-Testing-Standard)
+
+## Source S.W.12
+
+Another more commonly encountered form of brittleness is in graphical user interfaces that make invalid assumptions. For example, a user may be running on a low resolution display, and the software will open a window too large to fit the display. Another common problem is expressed when a user uses a color scheme other than the default, causing text to be rendered in the same color as the background, or a user uses a font other than the default, which won't fit in the allowed space and cuts off instructions and labels.
+
+[Software brittleness](https://en.wikipedia.org/wiki/Software_brittleness)
+
+---
+
+## Source S.W.1
+
+Test fragility, in this case, refers to the degree of change necessary for a test suite to accurately find faults on the implementation. Because unit tests are much closer to lower level implementation details of a system they have higher test fragility. If the prospect for the reusability of this test is low, then this can seem like a waste of time. Because unit tests offer a smaller scope of testable behaviors and require more changes to a test. In comparison, integration tests offer a larger scope of testable behaviors and require less changes to a test. Therefore, integration tests can offer higher test quality with lower test fragility than unit tests

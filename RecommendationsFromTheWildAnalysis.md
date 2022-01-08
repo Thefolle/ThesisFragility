@@ -1,247 +1,5 @@
 # Recommendations from the wild analysis
 
-## Recommendations R.W.0
-
-Source: S.W.0
-
-The testing pyramid shows the recommended proportion in the number of end-to-end test cases w.r.t. lower-level tests. The reason is that, moving updwards in the pyramid, there are issues like:
-
-- Test fragility (tests that break easily and unexpectedly, even when changes shouldn't have influenced the test);
-- Longer feedback time;
-- Increased effort levels;
-- Higher costs to implementation;
-- More specialized knowledge required.
-
-Contract: keep the number of unit tests greater than the number of end-to-end tests.
-
-See also: R.W.11.0
-
-## Recommendation R.W.1
-
-Source: S.W.2
-
-XPath locators relative to an element found by id come up to be more robust than absolute ones: for instance, //*[@id="fox"]/a.
-
-Contract: use relative XPath locators in place of absolute XPath locators.
-
-## Recommendation R.W.2
-
-Source: S.W.2
-
-Locators by id allow to pick up an element in the fastest way. This fact adds value to a test case, which then has less probability to get deleted.
-
-Contract: use locators by id since they are the fastest locators.
-
-## Recommendation R.W.3
-
-Source: S.W.2
-
-Contract: use locators by id due to their high readability.
-
-## Recommendation R.W.4
-
-Source: S.W.3.0
-
-Ids and names of elements should reflect their functional purpose so as to lower the probability they get changed. Ids must be meaningful and should not convey a presentational purpose. Additionally, they would be more readable.
-If an element is not directly involved in a use case, like containers, their ids or names should be generic.
-
-Contract: give to an element an id that mirrors its functional purpose. When an element has no particular meaning, give it a generic id.
-
-## Recommendation R.W.5
-
-Source: S.W.3.1
-
-Contract: give to elements a name that mirrors their functional purpose. When an element has no particular meaning, give it a generic name.
-
-See also: R.W.4
-
-## Recommendation R.W.6
-
-Source: S.W.3.2
-
-Do not concatenate words and abbreviations in selectors by any characters (including none at all) other than hyphens, in order to improve understanding and scannability.
-
-Contract: separate words in ID and class names by a hyphen.
-
-## Recommendation R.W.7
-
-Source: S.W.4
-
-Locators by id help in building more stable test cases, since they break less likely when a change in the AUT occurs.
-
-Contract: use locators by id since they are more robust than other types of locator.
-
-## Recommendation R.W.8
-
-Source: S.W.4
-
-Predictable locators by id help in writing tests for dynamically-populated lists, whose tests are typically hard to maintain.
-
-Contract: use locators by id to ease tests that build lists of elements at runtime.
-
-## Recommendation R.W.9
-
-Source: S.W.4
-
-XPath locators are slow and so they may break test cases that make use of timeouts, increasing their fragility.
-
-Contract: do not use XPath locators as they may break tests that rely upon timeouts.
-
-## Recommendation R.W.10
-
-Source: S.W.4
-
-XPath locators are more vulnerable to UI changes than ids, fact that augments test maintenance.
-
-Contract: prefer id than XPath locators since they require less maintenance.
-
-## Recommendations R.W.11
-
-Node.js recommendations are curated and revisioned by the respective authors and by the Node community, so they do not require additional analysis here, quite a summary and a contract.
-Each best practice is sometimes further explained in a web page apart, which is not reported here for the sake of brevity.
-
-## Recommendation R.W.11.0
-
-Source: S.W.5.0
-
-Integration tests must be developed before unit tests along the lifecycle of a test suite, due to their wider coverage applying a given effort. Unit tests, instead, due to their narrow coverage given the same effort, lead teams to abandon automatic testing, especially at the beginning of the project.
-
-Contract: first write end-to-end tests, then unit tests.
-
-See also: R.W.0
-
-## Recommendation R.W.11.1
-
-Source: S.W.5.1
-
-When testers write a new test case or when the test suite is getting big, they try to establish a rule to name test cases in a clear and consistent way; this task implies modifications in the test cases and in particular in their name. This recommendation establishes an effective naming rule from the very beginning, avoiding subsequent changes.
-
-If the name of a test case doesn't describe the starting scenario, the developer should infer it by reading the function's body.
-Additionally, clearly stating what's the expected output in advance helps in overcoming the psychological bias that may lead the tester to define by mistake an assertion so as to make the test find no bugs.
-
-Contract: give test cases a name with three sections: what is being tested, under which circumstances and what's the expected result.
-
-So as to help parsers checking this heuristics, they match test names against the pattern: When 'circumstances', then 'expected result'.
-
-## Recommendation R.W.11.2
-
-Source: S.W.5.2, S.W.14
-
-Arranging each test case in a uniform way saves effort since the mind recognizes the same pattern along the test suite. Saving effort, in turn, decreases the probability that the test case gets abandoned.
-
-Contract: arrange each test case in three successive sections: setup, act and assert.
-
-## Recommendation R.W.11.3
-
-Source: S.W.5.3
-
-Linters help in recognizing anti-patterns early. Run them before any test and before the commit so as to minimize the time needed to review code issues.
-The recommendations of this document may be indirectly enforced by linting the code against other types of good practices.
-
-Contract: run linters to detect any anti-pattern.
-
-The exact point in the build process where the linters should be activated is not established as part of the contract.
-
-## Recommendation R.W.8.4
-
-Source: S.W.5.3
-
-Run linters before commit or test run.
-
-Even better, the linter should be run for every key that the tester presses to avoid subsequent modifications.
-
-## Recommendation R.W.8.5
-
-Source: S.W.5.4, S.W.20, S.W.23, S.W.9
-
-Test cases that rely upon global variables are fragile. Indeed, these can be changed unexpectedly due to their wide scope.
-
-The issue is even worse in JavaScript, where their scope may be the whole project.
-
-See also: R.W.8.2
-
-## Recommendation R.W.8.6
-
-Mutual-dependent test cases w.r.t. the input data are highly fragile because sensible to a range of different modifications that may appear unrelated. Defining a data setup per test case make them independent and less fragile to input data modifications.
-
-## Recommendation R.W.8.7
-
-One step further, test cases must not access the same data from the test DB; restore the DB state after each test.
-
-## Recommendation R.W.8.8
-
-Even more, creating a new web driver instance per each test case ensures test isolation and easiers parallelization.
-
-## Recommendation R.W.8.9
-
-Source: S.W.5.4
-
-Running only a subset of the test cases save effort. Tagging tests having a common attribute and running only those tests lower the test run time.
-
-## Recommendation R.W.9
-
-Source: S.W.6
-
-A project is said rigid when a modification takes more and more effort to be applied since it implies the correction of many other consequent issues. This is a typical scenario when modules are strongly coupled.
-Fragility grows when a project is rigid. A developer may choose to avoid applying the modification from the start, but it is not always possible: in this situation test cases and the AUT break, showing up a relevant set of bugs and errors.
-
-Keeping test cases decoupled from each other and from the context reduces fragility against any type of modification.
-
-See also: R.W.8.5
-
-## Recommendation R.W.10
-
-Source: S.W.15
-
-Sections on data setup, actions and assertions must be as short as possible. This approach minimizes the fragility of test cases. Long test cases instead are expensive to run and poorly debuggable since the fault is more difficult to trace back.
-
-See also: R.W.8.2
-
-## Recommendation R.W.11
-
-Source: S.W.16, S.W.18
-
-The test data setup should not perform visual actions; the scenario must instead be initialized by calling APIs and performing DB queries that the AUT exposes.
-
-## Recommendation R.W.12
-
-Source: S.W.17, S.W.15
-
-Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.
-
-## Recommendation R.W.13
-
-Source: S.W.19
-
-Third-party libraries and services decrease the stability of tests.
-
-## Recommendation R.W.14
-
-No test case should continue the workflow of other tests; instead, when the tester decides to split a use case in many test cases, each test case but the first one must rather stub the preceding scenario with a proper test setup.
-
-See also: R.W.11
-
-## Recommendation R.W.15
-
-Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.
-
-## Recommendation R.W.16
-
-Source: S.W.13
-
-Id locators are the most robust choice; when they are not available, CSS locators should be selected; as last resort, XPaths can be chosen.
-
-## Recommendation W.7
-
-Test-driven development, known as TDD, is a technique that ensures that all features of a project get tested as they are being developed.
-It decreases the number of defects that appear after a modification, during the lifetime of a project. However, TDD requires a lot of effort to write and maintain test cases, since high coverage is requested by definition.
-
-## Recommendation W.8
-
-*Acceptance is pending*.
-
-## Recommendation W.9
-
 
 
 ## Draft
@@ -265,3 +23,22 @@ Source: S.W.1
 Since low-level tests depend upon implementation details, their fragility is greater than their high-level counterpart.
 
 Contract: 
+
+## Recommendation R.W.16
+
+Source: S.W.17, S.W.15
+
+Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.
+
+## Recommendation R.W.15
+
+Page objects (according to the Page Object Pattern, n.d.r.) should be designed as fluent APIs.
+
+## Recommendation W.7
+
+Test-driven development, known as TDD, is a technique that ensures that all features of a project get tested as they are being developed.
+It decreases the number of defects that appear after a modification, during the lifetime of a project. However, TDD requires a lot of effort to write and maintain test cases, since high coverage is requested by definition.
+
+## Recommendation W.8
+
+*Acceptance is pending*.

@@ -33,6 +33,11 @@ describe('end to end test', function() {
 
   it('should take a video and post it', function(done) {
     driver.get(homeUrl);
+    
+  });
+
+  it('should take a video and post it', function(done) {
+    driver.get(homeUrl);
     setTimeout(() => {
       driver.findElement(selenium.By.css('button#snap')).click()
         .then(setTimeout(() => {

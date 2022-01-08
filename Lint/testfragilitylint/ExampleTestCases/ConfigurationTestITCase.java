@@ -23,7 +23,7 @@ import org.junit.Test;
 public class ConfigurationTestITCase extends AbstractTest {
 
     @Test
-    public void browseCreateModal() {
+    public void whenConfiguringThenApply() {
         selenium.click("css=img[alt=\"Configuration\"]");
 
         selenium.waitForCondition("selenium.isElementPresent(\"//div[@id='tabs']\");", "30000");

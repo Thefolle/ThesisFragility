@@ -20,9 +20,9 @@ Example of explicit move of an element: ![Move element](<./DiffExamples/XpathMov
 
 ### Consequences of structural changes to xpaths
 
-The longer the xpath, the greater the probability that the xpath is involved in a change.
 
-A change in the AUT may trigger other xpaths to be modified, beside the directly-interested ones. For instance, the addition or deletion of an item in a collection causes a correction not just to the pertinent xpath, quite also to the subsequent ones in the list that get shifted upwards or downwards.
+
+
 
 ## Id
 
@@ -47,7 +47,7 @@ The conclusion is that locators and asserts on text should be discouraged in fav
 Data collected don't take into account the number of modified locators out of the number of total locators, that is the number of non-modified and modified locators of the same nature. They instead concentrate on the probability that, given a locator, it gets modified. In other words, the collected data are absolute measures rather than relative. Therefore, the interpretation of the collected data must be careful and possibly it should be compared with findings from other sources; this is where recommendations from the wild come into play. [Put this observation in the validity threats].
 
 Having at hand the rolled up data in the spreadsheet regarding locators, they have been sorted by decreasing number of modifications.
-XPath locators reveal their strong fragility given that 356 of the 1300 total modifications (27%) belong to this category alone, whereas their occurrence w.r.t. the locator-based modifications is 85%.
+
 The locators beside XPath-based ones don't show relevant absolute frequencies. This means that either they are used rarely or that they are robust. As previously discussed, this ambiguity is solved through recommendation gathering which is described later on in the study.
 
 As shown by statistical data, testers typically do not perform changes to asserts on xpaths, css, links, ids or names. It is common knowledge that selenium permits to retrieve attribute values given a node.

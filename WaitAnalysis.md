@@ -31,7 +31,7 @@ This statement should be converted to a wait for condition, for diverse reasons:
 
 These two opposite forces cause a continuous modification of the timeout.
 
-However, the conversion of a fixed wait into a condition-based wait seems not always to be recommended. Indeed, if the test case is intended for performance check, a fixed wait would immediately point out any slowness in the web page. However, here is where timeouts come into play: a condition-based wait can set a maximum timeout equal to the performance threshold established by the expected responsiveness; at the same time, if the condition is met earlier than the timeout lapse, the control flow of the test case can proceed immediately without wasting time.
+However, the conversion of a fixed wait into a condition-based wait seems not always to be recommended. Indeed, if the test case is intended for performance check, a fixed wait would immediately point out any slowness in the web page. However, here is where timeouts come into play: a condition-based wait can set a maximum timeout equal to the performance threshold established by the expected responsiveness; at the same time, if the condition is met earlier than the timeout lapse, the control flow of the test case can proceed immediately without wasting time in idle state.
 
 ## Implicit wait
 
