@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { Builder, until } = require("selenium-webdriver");
 const {
   findByDataTestSelenium,

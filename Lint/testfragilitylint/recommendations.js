@@ -12,6 +12,11 @@ const Unclassified = 5
 
 const recommendations = [
     {
+        id: "R.D.0",
+        message: `Turn fixed-time waits into condition-based waits.`,
+        scope: Statement
+    },
+    {
         id: "R.W.0",
         message: `Keep the number of unit tests greater than the number of end-to-end tests.`,
         scope: TestSuite
@@ -150,6 +155,11 @@ const recommendations = [
         id: "R.W.20",
         message: `Use tag locators to pick up multiple elements.`,
         scope: Literal
+    },
+    {
+        id: "R.W.21",
+        message: `Adopt the Page Object Pattern.`,
+        scope: TestSuite
     }
 ]
 

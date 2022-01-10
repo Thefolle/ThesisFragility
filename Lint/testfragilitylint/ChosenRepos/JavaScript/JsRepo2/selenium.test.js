@@ -1,3 +1,4 @@
+// @ts-nocheck
 const { Builder, By } = require("selenium-webdriver");
 
 const driver = new Builder().forBrowser("chrome").build();

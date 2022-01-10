@@ -582,67 +582,60 @@ function parseJava(document, diagnostics) {
 }
 
 function parseJavascript(document, diagnostics) {
-	let root = acorn.Parser.parse(document.getText());
+
+	let multiLineNonBlockDiagnostics = []
+
+	let root = acorn.Parser.parse(document.getText(), {
+
+		/* Rule about comments must go here */
+		onComment: (isBlock, text, start, end, startLoc, endLoc) /* startLoc and endLoc are always undefined */ => {
+			
+			// Keep in mind that a multi-line non-block comment is actually a list of single-line non-block comments
+			
+			let multiLineNonBlockDiagnostic = {
+				initialCommentOffset: undefined,
+				lastCommentOffset: undefined,
+				isPositive: true
+			}
+
+			/* Get the first and the last line of the multi-line non-block comment */
+			if (!isBlock) {
+				
+				if (multiLineNonBlockDiagnostics.length > 0 && multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset && document.positionAt(multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset).line == document.positionAt(start).line - 1) {
+					// this comment line is the continuation of the previous comment line
+					multiLineNonBlockDiagnostic = multiLineNonBlockDiagnostics.pop()
+					multiLineNonBlockDiagnostic.lastCommentOffset = end
+				} else {
+					// this is a separate comment
+					multiLineNonBlockDiagnostic.initialCommentOffset = start
+					multiLineNonBlockDiagnostic.lastCommentOffset = end
+				}
+			}
+			
+			let patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
+			
+			if (patterns.some(pattern => text.toLowerCase().includes(pattern))) {
+				if (!isBlock) {
+					multiLineNonBlockDiagnostic.isPositive = false
+				} else {
+					addDiagnostic(document, diagnostics, start, end, "R.W.21", "Use of a comment to describe the behaviour.")
+				}
+			}
+
+			if (!isBlock) {
+				multiLineNonBlockDiagnostics.push(multiLineNonBlockDiagnostic)
+			}
+
+		}
+	})
+
+	/* onComment is not called after the last line of the comment; so here add the diagnostic*/
+	multiLineNonBlockDiagnostics.forEach(multiLineNonBlockDiagnostic => {
+		if (multiLineNonBlockDiagnostic.isPositive)
+			addDiagnostic(document, diagnostics, multiLineNonBlockDiagnostic.initialCommentOffset, multiLineNonBlockDiagnostic.lastCommentOffset, "R.W.21", "Use of a comment to describe the behaviour.")
+	})
 
 	let Visitor1 = walker.make({
-		// CallExpression(node, junkState, c) {
-		// 	if (node.callee.name != 'it' && node.callee.name != 'test') {
-		// 		// @ts-ignore
-		// 		walker.base.CallExpression(node, junkState, c)
-		// 		return
-		// 	}
-
-		// 	let state = { imInTestCase: true, localVariables: [], firstStatementStartingOffset: node.arguments[1].body.end, driverVariable: null }
-			
-		// 	// @ts-ignore
-		// 	walker.base.CallExpression(node, state, c)
-
-		// 	/* if there is no setup section or the driver variable is not declared locally */
-		// 	if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.name).includes(state.driverVariable))) {
-		// 		// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
-		// 		addDiagnostic(document, diagnostics, node.arguments[1].body.start, node.arguments[1].body.body[0].start, "R.W.12.6")
-		// 	}
-		// },
-
-		// VariableDeclaration(node, state, c) {
-		// 	if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-		// 		// @ts-ignore
-		// 		walker.base.VariableDeclaration(node, null, c)
-		// 		return 
-		// 	}
-
-		// 	node.declarations.forEach(declaration => {
-		// 		state.localVariables.push(declaration.id)
-		// 	})
-			
-		// 	// @ts-ignore
-		// 	walker.base.VariableDeclaration(node, state, c)
-		// },
-
-		// MemberExpression(node, state, c) {
-		// 	if (!state || !state.imInTestCase || state.driverVariable) { // If the state is undefined, the node is outside a method body
-		// 		// @ts-ignore
-		// 		walker.base.MemberExpression(node, null, c)
-		// 		return
-		// 	}
-
-		// 	let reference = node.object.name // may be undefined if reference is a chain, like in this.driver.get
-		// 	let calledMethod = node.property.name
-		// 	if (!calledMethod) console.log(node)
-
-		// 	if (calledMethod.toLowerCase().includes("get") || calledMethod.toLowerCase().includes("click") || calledMethod.toLowerCase().includes("findelement")) {
-		// 		if (reference)
-		// 			state.driverVariable = reference
-		// 		else state.driverVariable = 'undefined' // if reference is undefined, must set a non-null value ('undefined') to distinguish from the case where driverVariable has not been discovered yet
-		// 		// @ts-ignore
-		// 		walker.base.MemberExpression(node, null, c)
-		// 		return
-		// 	}
-
-		// 	// @ts-ignore
-		// 	walker.base.MemberExpression(node, state, c)
-		// }
-
 		CallExpression(node, state, c) {
 			if (state && state.driverVariable) return
 
@@ -740,7 +733,8 @@ function parseJavascript(document, diagnostics) {
 
 		VariableDeclarator(node, state, c) {
 			if (!state.imInTestCase) {
-				state.globalVariables.push(node.id.name)
+				if (node.init && node.init.type != 'FunctionExpression' && node.init.type != 'ArrowFunctionExpression')
+					state.globalVariables.push(node.id.name)
 			} else {
 				state.localVariables.push(node.id.name)
 			}
@@ -791,7 +785,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.11", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of absolute XPath.")
-			} else if (literalString.startsWith("css") || literalString.includes('#') || literalString.includes('>')) { // The # character also denotes fragments in URLs
+			} else if (literalString.startsWith("css") || (literalString.includes('#') && !literalString.includes('http')) || literalString.includes('>')) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8", "Use of CSS locator.")
@@ -822,8 +816,20 @@ function parseJavascript(document, diagnostics) {
 				"then", "return", "should"
 			]
 
-			if (!scenarioPatterns.some(scenarioPattern => testCaseName.toLowerCase().includes(scenarioPattern)) || !expectedResultPatterns.some(expectedResultPattern => testCaseName.toLowerCase().includes(expectedResultPattern))) {
-				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1")
+			let isScenarioMissing = false, isExpectedResultMissing = false
+			if (!scenarioPatterns.some(scenarioPattern => testCaseName.toLowerCase().includes(scenarioPattern))) {
+				isScenarioMissing = true
+			}
+			if (!expectedResultPatterns.some(expectedResultPattern => testCaseName.toLowerCase().includes(expectedResultPattern))) {
+				isExpectedResultMissing = true
+			}
+
+			if (isScenarioMissing && !isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying the expected result.")
+			} else if (!isScenarioMissing && isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying the starting scenario.")
+			} else if (isScenarioMissing && isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying neither the starting scenario nor the expected result")
 			}
 
 			// @ts-ignore
@@ -1088,6 +1094,7 @@ function parseJavascript(document, diagnostics) {
 		VariableDeclaration(node, state, c) {
 			node.declarations.forEach(variableDeclarator => {
 				let chain = []
+				if (!variableDeclarator.init) return // declaration with no init
 				getChain(variableDeclarator.init, chain)
 				if (chain[0] == 'require') {
 					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of a third-party library.")
@@ -1105,7 +1112,22 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let visitors = [Visitor1, Visitor2, Visitor3, Visitor4/* , Visitor5 */, Visitor6, Visitor7, Visitor8]
+	let Visitor9 = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.type != 'Identifier' || node.callee.name != 'setTimeout') {
+				// @ts-ignore
+				walker.base.CallExpression(node, state, c)
+				return
+			}
+
+			addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.D.0", "Use of setTimeout.")
+
+			// @ts-ignore
+			walker.base.CallExpression(node, state, c)
+		}
+	})
+
+	let visitors = [Visitor1, Visitor2, Visitor3, Visitor4/* , Visitor5 */, Visitor6, Visitor7, Visitor8, Visitor9]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			walker.recursive(root, null, visitor, walker.base)
@@ -1134,6 +1156,8 @@ function getLocation(node) {
 
 /* node can be either a CallExpression, a MemberExpression or an Identifier */
 function getChain(node, chain) {
+	if (!node) console.log(chain)
+
 	if (node.type == 'MemberExpression') {
 		getChain(node.object, chain)
 		getChain(node.property, chain)

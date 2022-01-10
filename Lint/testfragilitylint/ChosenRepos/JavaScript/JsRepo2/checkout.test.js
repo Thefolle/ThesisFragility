@@ -1,3 +1,4 @@
+// @ts-nocheck
 //! Ensure that admin user has some items in their cart
 //! Non admin user has to have an empty cart
 
