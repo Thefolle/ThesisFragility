@@ -1,3 +1,4 @@
+// @ts-nocheck
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
@@ -50,6 +51,9 @@ function activate(context) {
 	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, collection))
 	context.subscriptions.push(openTextDocumentListener)
 
+	let closeTextDocumentListener = vscode.workspace.onDidCloseTextDocument(document => collection.delete(document.uri))
+	context.subscriptions.push(closeTextDocumentListener)
+
 	let generateReportCommand = vscode.commands.registerCommand('Generate Report', function () {
 		if (!vscode.window.activeTextEditor) {
 			vscode.window.showInformationMessage("No text editor has focus. Please, open a file and issue the command again.")
@@ -94,7 +98,7 @@ function updateDiagnostics(document, collection) {
 			parseJavascript(document, diagnostics);
 		}
 
-		console.log("Diagnostics have been collected.")
+		console.log(`Diagnostics of ${document.uri} have been collected.`)
 
 		if (diagnostics.length > 0) {
 			// prioritize diagnostics by narrowing scope
@@ -586,6 +590,7 @@ function parseJavascript(document, diagnostics) {
 	let multiLineNonBlockDiagnostics = []
 
 	let root = acorn.Parser.parse(document.getText(), {
+		allowImportExportEverywhere: true,
 
 		/* Rule about comments must go here */
 		onComment: (isBlock, text, start, end, startLoc, endLoc) /* startLoc and endLoc are always undefined */ => {
@@ -600,9 +605,14 @@ function parseJavascript(document, diagnostics) {
 
 			/* Get the first and the last line of the multi-line non-block comment */
 			if (!isBlock) {
+				/* Define a convenient variable */
+				let lastCommentOffset
+				if (multiLineNonBlockDiagnostics.length > 0) {
+					lastCommentOffset = multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset
+				} 
 				
-				if (multiLineNonBlockDiagnostics.length > 0 && multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset && document.positionAt(multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset).line == document.positionAt(start).line - 1) {
-					// this comment line is the continuation of the previous comment line
+				// if the last encountered comment was at the previous line && the two single-line comments are not separated by code, then this comment is the continuation of the previous
+				if (multiLineNonBlockDiagnostics.length > 0 && lastCommentOffset && document.positionAt(lastCommentOffset).line == document.positionAt(start).line - 1 && document.getText(new vscode.Range(document.positionAt(lastCommentOffset), document.positionAt(start))).trim().length == 0) {
 					multiLineNonBlockDiagnostic = multiLineNonBlockDiagnostics.pop()
 					multiLineNonBlockDiagnostic.lastCommentOffset = end
 				} else {
@@ -610,6 +620,16 @@ function parseJavascript(document, diagnostics) {
 					multiLineNonBlockDiagnostic.initialCommentOffset = start
 					multiLineNonBlockDiagnostic.lastCommentOffset = end
 				}
+				
+				// if (multiLineNonBlockDiagnostics.length > 0 && multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset && document.positionAt(multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset).line == document.positionAt(start).line - 1 && document.getText(new vscode.Range(document.positionAt(start), document.positionAt(end)))) {
+				// 	// this comment line is the continuation of the previous comment line
+				// 	multiLineNonBlockDiagnostic = multiLineNonBlockDiagnostics.pop()
+				// 	multiLineNonBlockDiagnostic.lastCommentOffset = end
+				// } else {
+				// 	// this is a separate comment
+				// 	multiLineNonBlockDiagnostic.initialCommentOffset = start
+				// 	multiLineNonBlockDiagnostic.lastCommentOffset = end
+				// }
 			}
 			
 			let patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
@@ -641,7 +661,7 @@ function parseJavascript(document, diagnostics) {
 
 			if (node.callee.name == 'it' || node.callee.name == 'test') {
 				let state = {imInTestCase: true, driverVariable: null, localVariables: []}
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, state, c)
 				if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.name).includes(state.driverVariable))) {
 					// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
@@ -652,7 +672,7 @@ function parseJavascript(document, diagnostics) {
 			}
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, null, c)
 				return
 			}
@@ -665,7 +685,7 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 		},
 
@@ -673,7 +693,7 @@ function parseJavascript(document, diagnostics) {
 			if (state && state.driverVariable) return
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.VariableDeclaration(node, null, c)
 				return 
 			}
@@ -682,7 +702,7 @@ function parseJavascript(document, diagnostics) {
 				state.localVariables.push(declaration.id)
 			})
 			
-			// @ts-ignore
+			
 			walker.base.VariableDeclaration(node, state, c)
 		},
 
@@ -690,7 +710,7 @@ function parseJavascript(document, diagnostics) {
 			if (state && state.driverVariable) return
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.MemberExpression(node, null, c)
 				return 
 			}
@@ -703,7 +723,7 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			// @ts-ignore
+			
 			walker.base.MemberExpression(node, state, c)
 		}
 
@@ -712,20 +732,20 @@ function parseJavascript(document, diagnostics) {
 	let Visitor2 = walker.make({
 		Program(node, junkState, c) {
 			let state = {globalVariables: []}
-			// @ts-ignore
+			
 			walker.base.Program(node, state, c)
 		},
 
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			state.imInTestCase = true
 			state.localVariables = []
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 
 			state.imInTestCase = false
@@ -733,19 +753,27 @@ function parseJavascript(document, diagnostics) {
 
 		VariableDeclarator(node, state, c) {
 			if (!state.imInTestCase) {
-				if (node.init && node.init.type != 'FunctionExpression' && node.init.type != 'ArrowFunctionExpression')
-					state.globalVariables.push(node.id.name)
+				if (!node.init || (node.init.type != 'FunctionExpression' && node.init.type != 'ArrowFunctionExpression')) {
+					/* Now get the identifier */
+					if (node.id.type == 'Identifier') { // let a = ...
+						state.globalVariables.push(node.id.name)
+					} else if (node.id.type == 'ObjectPattern') { // const {a, b} = ...
+						node.id.properties.forEach(property => {
+							state.globalVariables.push(property.key.name)
+						})
+					}
+				}
 			} else {
 				state.localVariables.push(node.id.name)
 			}
 
-			// @ts-ignore
+			
 			walker.base.VariableDeclarator(node, state, c)
 		},
 
 		Identifier(node, state, c) {
 			if (!state.imInTestCase) {
-				// @ts-ignore
+				
 				walker.base.Identifier(node, state, c)
 				return
 			}
@@ -754,15 +782,27 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.12.4")
 			}
 
-			// @ts-ignore
+			
 			walker.base.Identifier(node, state, c)
 		}
 	})
 
 	let Visitor3 = walker.make({
+		CallExpression(node, junkState, c) {
+			let chain = []
+			getChain(node, chain)
+			let state = { isCssLocator: false }
+
+			if (chain.length >= 2 && chain.includes('By') && chain.includes('css')) {
+				state.isCssLocator = true
+			}
+
+			walker.base.CallExpression(node, state, c)
+		},
+
 		Literal(node, state, c) {
 			if (!(typeof node.value === 'string' || node.value instanceof String)) {
-				// @ts-ignore
+				
 				walker.base.Literal(node, null, c)
 				return
 			}
@@ -785,7 +825,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.11", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of absolute XPath.")
-			} else if (literalString.startsWith("css") || (literalString.includes('#') && !literalString.includes('http')) || literalString.includes('>')) {
+			} else if ((state && state.isCssLocator) || literalString.startsWith("css") || (literalString.includes('#') && !literalString.includes('http')) || literalString.includes('>')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8", "Use of CSS locator.")
@@ -793,7 +833,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of CSS locator.")
 			}
 
-			// @ts-ignore
+			
 			walker.base.Literal(node, null, c)
 		}
 	})
@@ -801,12 +841,14 @@ function parseJavascript(document, diagnostics) {
 	let Visitor4 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, null, c)
 				return
 			}
 
-			let testCaseName = node.arguments[0].value
+			let concat = []
+			getLiteralsFromConcatenation(node.arguments[0], concat)
+			let testCaseName = concat.join('')
 
 			const scenarioPatterns = [
 				"when", "if"
@@ -832,7 +874,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying neither the starting scenario nor the expected result")
 			}
 
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, null, c)
 		}
 	})
@@ -843,13 +885,13 @@ function parseJavascript(document, diagnostics) {
 	let Visitor5 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: node.arguments[1].body.start, endOffset: node.arguments[1].body.end }, imInBody: true }
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
@@ -865,14 +907,14 @@ function parseJavascript(document, diagnostics) {
 		// Represent a statement in test cases, even in callback-styled code
 		ExpressionStatement(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.ExpressionStatement(node, null, c)
 				return
 			}
 
 			state.currentStatement = { startOffset: node.start, endOffset: node.end }
 
-			// @ts-ignore
+			
 			walker.base.ExpressionStatement(node, state, c)
 
 			// this statement must go after the recursive call
@@ -926,7 +968,7 @@ function parseJavascript(document, diagnostics) {
 
 		MemberExpression(node, state, c) {
 			if (!state || !state.imInBody) {
-				// @ts-ignore
+				
 				walker.base.MemberExpression(node, null, c)
 				return
 			}
@@ -955,7 +997,7 @@ function parseJavascript(document, diagnostics) {
 				
 			}
 
-			// @ts-ignore
+			
 			walker.base.MemberExpression(node, state, c)
 
 			/* Check for act section */
@@ -986,7 +1028,7 @@ function parseJavascript(document, diagnostics) {
 
 		VariableDeclaration(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.VariableDeclaration(node, null, c)
 				return
 			}
@@ -997,14 +1039,14 @@ function parseJavascript(document, diagnostics) {
 				state.isJustOneDeclaration = true
 			}
 
-			// @ts-ignore
+			
 			walker.base.VariableDeclaration(node, state, c)
 			state.isJustOneDeclaration = false
 		},
 
 		VariableDeclarator(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				// @ts-ignore
+				
 				walker.base.VariableDeclarator(node, null, c)
 				return
 			}
@@ -1025,7 +1067,7 @@ function parseJavascript(document, diagnostics) {
 
 			this.check(state, statementSection)
 
-			// @ts-ignore
+			
 			walker.base.VariableDeclarator(node, state, c)
 		}
 
@@ -1039,7 +1081,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start,node.end, "R.W.17", "Usage of setup/tear down method.")
 			}
 
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 		}
 	})
@@ -1047,13 +1089,13 @@ function parseJavascript(document, diagnostics) {
 	let Visitor7 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			state = {numberOfStatements: 0}
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 
 			if (state.numberOfStatements > 15) {
@@ -1065,27 +1107,27 @@ function parseJavascript(document, diagnostics) {
 
 		ExpressionStatement(node, state, c) {
 			if (!state) {
-				// @ts-ignore
+				
 				walker.base.ExpressionStatement(node, state, c)
 				return
 			}
 
 			state.numberOfStatements++
 
-			// @ts-ignore
+			
 			walker.base.ExpressionStatement(node, state, c)
 		},
 
 		VariableDeclaration(node, state, c) {
 			if (!state) {
-				// @ts-ignore
+				
 				walker.base.VariableDeclaration(node, state, c)
 				return
 			}
 
 			state.numberOfStatements++
 
-			// @ts-ignore
+			
 			walker.base.VariableDeclaration(node, state, c)
 		}
 	})
@@ -1107,22 +1149,28 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
+		},
+
+		ImportDeclaration(node, state, c) {
+			addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of a third-party library.")
+		
+			walker.base.ImportDeclaration(node, state, c)
 		}
 	})
 
 	let Visitor9 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.type != 'Identifier' || node.callee.name != 'setTimeout') {
-				// @ts-ignore
+				
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.D.0", "Use of setTimeout.")
 
-			// @ts-ignore
+			
 			walker.base.CallExpression(node, state, c)
 		}
 	})
@@ -1169,6 +1217,15 @@ function getChain(node, chain) {
 		getChain(node.argument, chain)
 	} else if (node.type == 'Literal') {
 		chain.push(node.value)
+	}
+}
+
+function getLiteralsFromConcatenation(node, concat) {
+	if (node.type == 'BinaryExpression') {
+		getLiteralsFromConcatenation(node.left, concat)
+		getLiteralsFromConcatenation(node.right, concat)
+	} else if (node.type == 'Literal') {
+		concat.push(node.value)
 	}
 }
 

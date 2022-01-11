@@ -2,6 +2,10 @@
   "name": "testfragilitylint",
   "displayName": "TestFragilityLint",
   "description": "",
+  "author": {
+    "name": "Thefolle"
+  },
+  "publisher": "Thefolle",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.62.0"
