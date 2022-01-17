@@ -1,7 +1,3 @@
-const acorn = require('acorn-node');
-const walker = require('acorn-node/walk')
-
-const javaParser = require('java-parser')
 
 const TestSuite = 0
 const TestCase = 1
@@ -27,13 +23,8 @@ const recommendations = [
         scope: Literal
     },
     {
-        id: "R.W.2",
-        message: `Use locators by id since they are the fastest locators.`,
-        scope: Literal
-    },
-    {
         id: "R.W.3",
-        message: `Use locators by id due to their high readability.`,
+        message: `Prefer locators by id.`,
         scope: Literal
     },
     {
@@ -57,23 +48,8 @@ const recommendations = [
         scope: Literal
     },
     {
-        id: "R.W.8",
-        message: `Use locators by id since they are more robust than other types of locator.`,
-        scope: Literal
-    },
-    {
-        id: "R.W.9",
-        message: `Use locators by id to ease tests that build lists of elements at runtime.`,
-        scope: Snippet
-    },
-    {
         id: "R.W.10",
         message: `Do not use XPath locators as they may break tests that rely upon timeouts.`,
-        scope: Literal
-    },
-    {
-        id: "R.W.11",
-        message: `Prefer id than XPath locators since they require less maintenance.`,
         scope: Literal
     },
     {
@@ -94,7 +70,7 @@ const recommendations = [
     {
         id: "R.W.12.3",
         message: `Run linters to detect any anti-pattern.`,
-        scope: Unclassified
+        scope: TestSuite
     },
     {
         id: "R.W.12.4",
@@ -140,11 +116,6 @@ const recommendations = [
         id: "R.W.17",
         message: `Test cases must not continue the workflow of other test cases.`,
         scope: TestCase
-    },
-    {
-        id: "R.W.18",
-        message: `Prefer id locators to CSS locators, and CSS locators to XPath locators.`,
-        scope: Literal
     },
     {
         id: "R.W.19",

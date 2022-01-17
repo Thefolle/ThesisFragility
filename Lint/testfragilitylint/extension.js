@@ -95,12 +95,17 @@ function updateDiagnostics(document, collection) {
 		if (language == 'java') {
 			parseJava(document, diagnostics)
 		} else if (language == 'javascript') {
-			parseJavascript(document, diagnostics);
+			// if the file is actually a test file (not setup, configuration or application files)
+			let fileName = document.fileName.substring(document.fileName.lastIndexOf('\\') + 1)
+			if (['test', 'spec'].some(pattern => fileName.toLowerCase().includes(pattern))) {
+				parseJavascript(document, diagnostics);
+			}
+			
 		}
 
-		console.log(`Diagnostics of ${document.uri} have been collected.`)
-
 		if (diagnostics.length > 0) {
+			console.log(`Diagnostics of ${document.uri} have been collected.`)
+
 			// prioritize diagnostics by narrowing scope
 			diagnostics.sort((diagnostic1, diagnostic2) => {
 				let scope1 = recommendations.find(recommendation => recommendation.id == diagnostic1.code).scope
@@ -793,48 +798,65 @@ function parseJavascript(document, diagnostics) {
 			getChain(node, chain)
 			let state = { isCssLocator: false }
 
-			if (chain.length >= 2 && chain.includes('By') && chain.includes('css')) {
-				state.isCssLocator = true
+			if (chain.length >= 2) {
+				if ((chain.includes('By') || chain.includes('by'))) {
+					if (chain.includes('css')) {
+						state.isCssLocator = true
+					} else if (chain.includes('xpath')) {
+						state.isXpathLocator = true
+					}
+				}
 			}
 
 			walker.base.CallExpression(node, state, c)
 		},
 
 		Literal(node, state, c) {
-			if (!(typeof node.value === 'string' || node.value instanceof String)) {
+			if (!(typeof node.value === 'string' || node.value instanceof String) && !node.regex) {
 				
 				walker.base.Literal(node, null, c)
 				return
 			}
-			let literalString = node.value
 
-			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of relative XPath.")
+			let literalString
+			if (node.regex) {
+				literalString = node.regex.pattern
+			} else {
+				literalString = node.value
+			}
+			
+			this.innerDiagnostic(literalString, node, state)
+
+			walker.base.Literal(node, null, c)
+		},
+
+		TemplateElement(node, state, c) {
+			let literalString = node.value.cooked
+
+			this.innerDiagnostic(literalString, node, state)
+
+			walker.base.TemplateElement(node, null, c)
+		},
+
+		innerDiagnostic(literalString, node, state) {
+			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/') || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=')))) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.9", "Use of relative XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.11", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of relative XPath.")
 			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.1", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.9", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.11", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of absolute XPath.")
-			} else if ((state && state.isCssLocator) || literalString.startsWith("css") || (literalString.includes('#') && !literalString.includes('http')) || literalString.includes('>')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.2", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.8", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.9", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.18", "Use of CSS locator.")
+			} else if (state && state.isXpathLocator) {
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10")
+			} else if (!literalString.includes('http')) {
+				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
+					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of id locator mapped as CSS locator.")
+				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js'))) {
+					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
+				}
 			}
-
-			
-			walker.base.Literal(node, null, c)
+			 
 		}
 	})
 
@@ -867,9 +889,9 @@ function parseJavascript(document, diagnostics) {
 			}
 
 			if (isScenarioMissing && !isExpectedResultMissing) {
-				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying the expected result.")
-			} else if (!isScenarioMissing && isExpectedResultMissing) {
 				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying the starting scenario.")
+			} else if (!isScenarioMissing && isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying the expected result.")
 			} else if (isScenarioMissing && isExpectedResultMissing) {
 				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying neither the starting scenario nor the expected result")
 			}
@@ -1098,8 +1120,8 @@ function parseJavascript(document, diagnostics) {
 			
 			walker.base.CallExpression(node, state, c)
 
-			if (state.numberOfStatements > 15) {
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.14", "The test case is too long.")
+			if (state.numberOfStatements > 20) {
+				addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.W.14", "The test case is too long.")
 			}
 
 			state = null
@@ -1162,13 +1184,20 @@ function parseJavascript(document, diagnostics) {
 
 	let Visitor9 = walker.make({
 		CallExpression(node, state, c) {
-			if (node.callee.type != 'Identifier' || node.callee.name != 'setTimeout') {
+			const patterns = ['setTimeout', 'sleep']
+
+			let chain = []
+			getChain(node, chain)
+
+			let diagnosedPattern = patterns.find(pattern => chain.includes(pattern))
+
+			if (!diagnosedPattern) {
 				
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
-			addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.D.0", "Use of setTimeout.")
+			addDiagnostic(document, diagnostics, node.start, node.end, "R.D.0", `Use of ${diagnosedPattern}.`)
 
 			
 			walker.base.CallExpression(node, state, c)
@@ -1225,7 +1254,11 @@ function getLiteralsFromConcatenation(node, concat) {
 		getLiteralsFromConcatenation(node.left, concat)
 		getLiteralsFromConcatenation(node.right, concat)
 	} else if (node.type == 'Literal') {
-		concat.push(node.value)
+		if (node.regex) {
+			concat.push(node.regex.pattern)
+		} else {
+			concat.push(node.value)
+		}
 	}
 }
 
