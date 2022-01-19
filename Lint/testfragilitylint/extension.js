@@ -364,11 +364,45 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodDeclarator(node) {
+		methodDeclaration(node) {
+			let state
+			if (isTestCase(node)) {
+				state = {isTestCase: true}
+			}
+			
+			super.methodDeclaration(node, state)
+		}
+
+		methodDeclarator(node, state) {
+			if (!state || !state.isTestCase) {
+				super.methodDeclarator(node)
+				return
+			}
+
 			let testCaseName = node.Identifier[0].image
 
-			if (!testCaseName.toLowerCase().includes("when") || !testCaseName.toLowerCase().includes("then")) {
-				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.12.1", testCaseName)
+			const scenarioPatterns = [
+				"when", "if"
+			]
+
+			const expectedResultPatterns = [
+				"then", "return", "should"
+			]
+
+			let isScenarioMissing = false, isExpectedResultMissing = false
+			if (!scenarioPatterns.some(scenarioPattern => testCaseName.toLowerCase().includes(scenarioPattern))) {
+				isScenarioMissing = true
+			}
+			if (!expectedResultPatterns.some(expectedResultPattern => testCaseName.toLowerCase().includes(expectedResultPattern))) {
+				isExpectedResultMissing = true
+			}
+
+			if (isScenarioMissing && !isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.12.1", "The test name is not specifying the starting scenario.")
+			} else if (!isScenarioMissing && isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.12.1", "The test name is not specifying the expected result.")
+			} else if (isScenarioMissing && isExpectedResultMissing) {
+				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.12.1", "The test name is not specifying neither the starting scenario nor the expected result")
 			}
 
 			super.methodDeclarator(node)
@@ -559,11 +593,30 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodBody(node) {
+		methodDeclaration(node) {
+			let state = {}
+			if (isTestCase(node)) {
+				state = {isTestCase: true}
+			}
+
+			super.methodDeclaration(node, state)
+		}
+
+		methodDeclarator(node, state) {
+			state.testCaseName = node.Identifier[0]
+			super.methodDeclarator(node, state)
+		}
+
+		methodBody(node, state) {
+			if (!state || !state.isTestCase) {
+				super.methodBody(node)
+				return
+			}
+
 			let testCaseLength = getChild(getChild(node.block).blockStatements).blockStatement.length
 
 			if (testCaseLength > 15) { // Magic number: need further research
-				addDiagnostic(document, diagnostics, getLocation(node.block).startOffset, getLocation(node.block).endOffset, "R.W.14", "The test case is too long.")
+				addDiagnostic(document, diagnostics, state.testCaseName.startOffset, state.testCaseName.endOffset, "R.W.14", "The test case is too long.")
 			}
 
 			super.methodBody(node)
@@ -1240,6 +1293,25 @@ function getChild(node) {
 
 function getLocation(node) {
 	return node[0].location
+}
+
+function getMethodAnnotations(node) {
+	let annotations = node.methodModifier
+		.map(modifier => modifier.children)
+		.filter(modifier => modifier.annotation)
+		.map(annotation => getChild(getChild(annotation.annotation).typeName).Identifier[0].image)
+
+	return annotations
+}
+
+function isTestCase(methodDeclaration) {
+	let annotations = getMethodAnnotations(methodDeclaration)
+
+	if (annotations.includes('Test')) {
+		return true
+	} else {
+		return false
+	}
 }
 
 /* node can be either a CallExpression, a MemberExpression or an Identifier */
