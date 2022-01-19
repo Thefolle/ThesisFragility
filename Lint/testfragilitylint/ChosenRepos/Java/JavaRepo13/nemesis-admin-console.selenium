@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://selenium-ide.openqa.org/profiles/test-case">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="selenium.base" href="http://localhost:8080/" />
+<title>adminconsole</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">adminconsole</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/admin/</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForPageToLoad</td>
+	<td>5000</td>
+	<td></td>
+</tr>
+<!--Header link-->
+<tr>
+	<td>clickAt</td>
+	<td>id=app-header-title</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForPageToLoad</td>
+	<td>5000</td>
+	<td></td>
+</tr>
+<!--System Properties-->
+<tr>
+	<td>assertCssCount</td>
+	<td>css=div#system-properties-grid-body table.x-grid-item</td>
+	<td>4</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=input[id^='system-properties-filter-input']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>sendKeys</td>
+	<td>css=input[id^='system-properties-filter-input']</td>
+	<td>one</td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=table.x-grid-item</td>
+	<td>1</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>id=system-properties-filter-trigger-clear</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=table.x-grid-item</td>
+	<td>4</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=div#system-properties-grid-body table.x-grid-item td.x-grid-cell</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>css=span[id^='system-properties-delete-btn']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=table.x-grid-item</td>
+	<td>3</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=span[id^='system-properties-save-btn']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=table.x-grid-item</td>
+	<td>3</td>
+</tr>
+<!--Log Levels-->
+<tr>
+	<td>clickAt</td>
+	<td>css=span.x-tab-inner-default:contains('Levels')</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=table.x-grid-item</td>
+	<td>6</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=span.x-tab-inner-default:contains('Levels')</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=div#system-loggers-grid-body table.x-grid-item</td>
+	<td>3</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=input[id^='system-loggers-filter-input']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>sendKeys</td>
+	<td>css=input[id^='system-loggers-filter-input']</td>
+	<td>one</td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=div#system-loggers-grid-body table.x-grid-item</td>
+	<td>1</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>id=system-loggers-filter-trigger-clear</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>css=div#system-loggers-grid-body table.x-grid-item td.x-grid-cell</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>id=system-loggers-delete-btn</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertCssCount</td>
+	<td>css=div#system-loggers-grid-body table.x-grid-item</td>
+	<td>2</td>
+</tr>
+<!--PKAnalyzer portlet.-->
+<tr>
+	<td>sendKeys</td>
+	<td>id=pk-input-field-inputEl</td>
+	<td>123456</td>
+</tr>
+<tr>
+	<td>clickAt</td>
+	<td>id=decode-pk-button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertValue</td>
+	<td>id=pk-input-field-inputEl</td>
+	<td>100</td>
+</tr>
+<!--Thread dump-->
+<tr>
+	<td>clickAt</td>
+	<td>id=platform-actions-thread-dump</td>
+	<td></td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>id=threadDumpResultWindow</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertValue</td>
+	<td>id=threaddumpResultArea-inputEl</td>
+	<td>thread dump</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>css=div#threadDumpResultWindow img.x-tool-close</td>
+	<td></td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementNotPresent</td>
+	<td>id=threadDumpResultWindow</td>
+	<td></td>
+</tr>
+<!--Change locale-->
+<tr>
+	<td>runScript</td>
+	<td>var c = Ext.getCmp('app-header-language-selector'); c.setValue({'isoCode':'bg'}); c.fireEvent('select', c, {'isoCode':'bg'});</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForPageToLoad</td>
+	<td>5000</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertText</td>
+	<td>id=app-header-logout</td>
+	<td>Изход</td>
+</tr>
+<!--Logout Link-->
+<tr>
+	<td>clickAt</td>
+	<td>id=app-header-logout</td>
+	<td></td>
+</tr>
+<tr>
+	<td>pause</td>
+	<td>500</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertTitle</td>
+	<td>Login Page</td>
+	<td></td>
+</tr>
+</tbody></table>
+</body>
+</html>

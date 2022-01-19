@@ -626,15 +626,6 @@ function parseJavascript(document, diagnostics) {
 					multiLineNonBlockDiagnostic.lastCommentOffset = end
 				}
 				
-				// if (multiLineNonBlockDiagnostics.length > 0 && multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset && document.positionAt(multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset).line == document.positionAt(start).line - 1 && document.getText(new vscode.Range(document.positionAt(start), document.positionAt(end)))) {
-				// 	// this comment line is the continuation of the previous comment line
-				// 	multiLineNonBlockDiagnostic = multiLineNonBlockDiagnostics.pop()
-				// 	multiLineNonBlockDiagnostic.lastCommentOffset = end
-				// } else {
-				// 	// this is a separate comment
-				// 	multiLineNonBlockDiagnostic.initialCommentOffset = start
-				// 	multiLineNonBlockDiagnostic.lastCommentOffset = end
-				// }
 			}
 			
 			let patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
@@ -796,14 +787,31 @@ function parseJavascript(document, diagnostics) {
 		CallExpression(node, junkState, c) {
 			let chain = []
 			getChain(node, chain)
-			let state = { isCssLocator: false }
+			chain = chain.map(ring => ring.toLowerCase())
 
+			let state = {}
 			if (chain.length >= 2) {
-				if ((chain.includes('By') || chain.includes('by'))) {
+				if (chain.includes('by')) {
 					if (chain.includes('css')) {
 						state.isCssLocator = true
 					} else if (chain.includes('xpath')) {
 						state.isXpathLocator = true
+					} else if (chain.includes('classname')) {
+						state.isClassNameLocator = true
+					} else if (chain.includes('linktext')) {
+						state.isLinkTextLocator = true
+					} else if (chain.includes('name')) {
+						state.isNameLocator = true
+					} else if (chain.includes('id')) {
+						state.isIdLocator = true
+					} else if (chain.includes('tagname')) {
+						state.isTagLocator = true
+					} else if (chain.includes('model')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isModelLocator = true
+					} else if (chain.includes('binding')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isBindingLocator = true
+					} else if (chain.includes('repeater')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isRepeaterLocator = true
 					}
 				}
 			}
@@ -839,7 +847,7 @@ function parseJavascript(document, diagnostics) {
 		},
 
 		innerDiagnostic(literalString, node, state) {
-			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/') || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=')))) {
+			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of relative XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of relative XPath.")
 			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
@@ -852,8 +860,11 @@ function parseJavascript(document, diagnostics) {
 			} else if (!literalString.includes('http')) {
 				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
 					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of id locator mapped as CSS locator.")
-				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js'))) {
+				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
 					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
+					if (literalString.includes('_')) {
+						addDiagnostic(document, diagnostics, node.start, node.end, "R.W.7")
+					}
 				}
 			}
 			 

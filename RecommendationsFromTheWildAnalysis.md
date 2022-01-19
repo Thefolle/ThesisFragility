@@ -24,11 +24,7 @@ Since low-level tests depend upon implementation details, their fragility is gre
 
 Contract: 
 
-## Recommendation R.W.16
 
-Source: S.W.17, S.W.15
-
-Test cases should adopt the Page Object Pattern, in order to decouple the test behaviour from the underlying implementation. In most cases, one or two operations per section (data setup, actions or assertion sections, n.d.r.) are enough. Test cases must not contain any visual statement; they should contain assertions. Page objects should contain visual statements; they should not contain any assertion, beside those for checking that the page has loaded.
 
 ## Recommendation R.W.15
 
