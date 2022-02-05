@@ -100,7 +100,7 @@ function updateDiagnostics(document, collection) {
 			if (['test', 'spec'].some(pattern => fileName.toLowerCase().includes(pattern))) {
 				parseJavascript(document, diagnostics);
 			}
-			
+
 		}
 
 		if (diagnostics.length > 0) {
@@ -129,14 +129,15 @@ function supportLanguage(actualLanguage) {
 function generateReport(document, diagnostics) {
 	let reportUri = vscode.Uri.joinPath(document.uri, "..", "Report.json")
 	let workspaceEdit = new vscode.WorkspaceEdit()
-	
-	workspaceEdit.createFile(reportUri, {overwrite: true, ignoreIfExists: false})
+
+	workspaceEdit.createFile(reportUri, { overwrite: true, ignoreIfExists: false })
 	workspaceEdit.insert(reportUri, new vscode.Position(0, 0), JSON.stringify(diagnostics))
 	vscode.workspace.applyEdit(workspaceEdit)
 }
 
 function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
+	
 
 	let Visitor1 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
@@ -221,7 +222,7 @@ function parseJava(document, diagnostics) {
 			state.hasCalledBothPartFirstAndPartRest = true
 			super.fqnOrRefTypePartRest(node)
 		}
-		
+
 	}
 
 	/* No need to compute global variables separately, as Java doesn't support hoisting */
@@ -231,7 +232,7 @@ function parseJava(document, diagnostics) {
 			this.context = { globalVariables: [] };
 			this.validateVisitor();
 		}
-			
+
 		fieldDeclaration(node) {
 			let state = { isGlobalDeclaration: true }
 			super.fieldDeclaration(node, state)
@@ -288,7 +289,7 @@ function parseJava(document, diagnostics) {
 		/* Method to provide better precision */
 		fqnOrRefTypePartRest(node) {
 			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
-			let state = {calledMethod}
+			let state = { calledMethod }
 			super.fqnOrRefTypePartRest(node, state)
 		}
 
@@ -302,27 +303,27 @@ function parseJava(document, diagnostics) {
 			}
 
 			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
-/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
+				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of relative XPath.")
 			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
-/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
+				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of relative XPath.")
 			} else if (literalString.startsWith("css") || literalString.includes('#') || literalString.includes('>')) {
-/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of CSS locator.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of CSS locator.") */
+				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of CSS locator.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of CSS locator.")
+								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of CSS locator.") */
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of CSS locator.")
 			}
 
@@ -367,9 +368,9 @@ function parseJava(document, diagnostics) {
 		methodDeclaration(node) {
 			let state
 			if (isTestCase(node)) {
-				state = {isTestCase: true}
+				state = { isTestCase: true }
 			}
-			
+
 			super.methodDeclaration(node, state)
 		}
 
@@ -450,35 +451,35 @@ function parseJava(document, diagnostics) {
 				state.imInActSection = true
 
 			} else if (state.imInActSection && statementSection.imInAssertSection) {
-				
+
 				state.imInActSection = false
 				state.imInAssertSection = true
-			
+
 			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "The setup section is empty.")
-			
+
 			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "The act section is empty.")
-			
+
 			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The declaration is inside the act section.")
-			
+
 			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The setup statement is inside the assert section.")
-			
+
 			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The act statement is inside the assert section.")
-			
+
 			}
 
 			// this statement must go after the recursive call
@@ -551,7 +552,7 @@ function parseJava(document, diagnostics) {
 				return
 			}
 
-			let state = {startOffset: getLocation(node.methodDeclaration).startOffset, endOffset: getLocation(node.methodDeclaration).endOffset}
+			let state = { startOffset: getLocation(node.methodDeclaration).startOffset, endOffset: getLocation(node.methodDeclaration).endOffset }
 			super.classMemberDeclaration(node, state)
 		}
 
@@ -581,7 +582,7 @@ function parseJava(document, diagnostics) {
 
 			if (annotationName == 'Before') {
 				state.isFixtureMethod = true
-			} else if (annotationName == 'After' ) {
+			} else if (annotationName == 'After') {
 				state.isFixtureMethod = true
 			}
 		}
@@ -596,7 +597,7 @@ function parseJava(document, diagnostics) {
 		methodDeclaration(node) {
 			let state = {}
 			if (isTestCase(node)) {
-				state = {isTestCase: true}
+				state = { isTestCase: true }
 			}
 
 			super.methodDeclaration(node, state)
@@ -624,16 +625,39 @@ function parseJava(document, diagnostics) {
 
 	}
 
+	let Visitor8 = function() {
+		let matches = document.getText().matchAll('//.*')
+		let comments = []
+		for (let match of matches) {
+			if (!["\'", "\"", "\`"].some(apostrofy => match[0].includes(apostrofy))) {
+				comments.push(match)
+			}
+		}
+
+		const patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
+		comments
+			.filter(comment => !patterns.includes(comment))
+			.forEach(comment => {
+				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21")
+		})
+	}
+
 	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4()/* , new Visitor5() */, new Visitor6(),
-		new Visitor7()]
+	new Visitor7(), Visitor8]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
-			visitor.visit(root)
+			if (typeof visitor === 'object') {
+				visitor.visit(root)
+			} else if (typeof visitor === 'function') {
+				visitor()
+			}
+
 			resolve(undefined)
 		} catch (e) {
 			reject(e)
 		}
 	}))
+
 
 	Promise.all(promises).then(res =>
 		undefined
@@ -652,9 +676,9 @@ function parseJavascript(document, diagnostics) {
 
 		/* Rule about comments must go here */
 		onComment: (isBlock, text, start, end, startLoc, endLoc) /* startLoc and endLoc are always undefined */ => {
-			
+
 			// Keep in mind that a multi-line non-block comment is actually a list of single-line non-block comments
-			
+
 			let multiLineNonBlockDiagnostic = {
 				initialCommentOffset: undefined,
 				lastCommentOffset: undefined,
@@ -667,8 +691,8 @@ function parseJavascript(document, diagnostics) {
 				let lastCommentOffset
 				if (multiLineNonBlockDiagnostics.length > 0) {
 					lastCommentOffset = multiLineNonBlockDiagnostics[multiLineNonBlockDiagnostics.length - 1].lastCommentOffset
-				} 
-				
+				}
+
 				// if the last encountered comment was at the previous line && the two single-line comments are not separated by code, then this comment is the continuation of the previous
 				if (multiLineNonBlockDiagnostics.length > 0 && lastCommentOffset && document.positionAt(lastCommentOffset).line == document.positionAt(start).line - 1 && document.getText(new vscode.Range(document.positionAt(lastCommentOffset), document.positionAt(start))).trim().length == 0) {
 					multiLineNonBlockDiagnostic = multiLineNonBlockDiagnostics.pop()
@@ -678,11 +702,11 @@ function parseJavascript(document, diagnostics) {
 					multiLineNonBlockDiagnostic.initialCommentOffset = start
 					multiLineNonBlockDiagnostic.lastCommentOffset = end
 				}
-				
+
 			}
-			
+
 			let patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
-			
+
 			if (patterns.some(pattern => text.toLowerCase().includes(pattern))) {
 				if (!isBlock) {
 					multiLineNonBlockDiagnostic.isPositive = false
@@ -709,8 +733,8 @@ function parseJavascript(document, diagnostics) {
 			if (state && state.driverVariable) return
 
 			if (node.callee.name == 'it' || node.callee.name == 'test') {
-				let state = {imInTestCase: true, driverVariable: null, localVariables: []}
-				
+				let state = { imInTestCase: true, driverVariable: null, localVariables: [] }
+
 				walker.base.CallExpression(node, state, c)
 				if (state.localVariables.length == 0 || (state.driverVariable && !state.localVariables.map(localVariable => localVariable.name).includes(state.driverVariable))) {
 					// in this case, the setup snippet is between the left curly bracket and the first character of the first statement
@@ -721,7 +745,7 @@ function parseJavascript(document, diagnostics) {
 			}
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				
+
 				walker.base.CallExpression(node, null, c)
 				return
 			}
@@ -734,7 +758,7 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			
+
 			walker.base.CallExpression(node, state, c)
 		},
 
@@ -742,16 +766,16 @@ function parseJavascript(document, diagnostics) {
 			if (state && state.driverVariable) return
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				
+
 				walker.base.VariableDeclaration(node, null, c)
-				return 
+				return
 			}
 
 			node.declarations.forEach(declaration => {
 				state.localVariables.push(declaration.id)
 			})
-			
-			
+
+
 			walker.base.VariableDeclaration(node, state, c)
 		},
 
@@ -759,9 +783,9 @@ function parseJavascript(document, diagnostics) {
 			if (state && state.driverVariable) return
 
 			if (!state || !state.imInTestCase) {// If the state is undefined, the node is outside a method body
-				
+
 				walker.base.MemberExpression(node, null, c)
-				return 
+				return
 			}
 
 			const recognizedDriverMethods = ['wait', 'getTitle', 'get', 'findElement']
@@ -772,7 +796,7 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			
+
 			walker.base.MemberExpression(node, state, c)
 		}
 
@@ -780,21 +804,21 @@ function parseJavascript(document, diagnostics) {
 
 	let Visitor2 = walker.make({
 		Program(node, junkState, c) {
-			let state = {globalVariables: []}
-			
+			let state = { globalVariables: [] }
+
 			walker.base.Program(node, state, c)
 		},
 
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				
+
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			state.imInTestCase = true
 			state.localVariables = []
-			
+
 			walker.base.CallExpression(node, state, c)
 
 			state.imInTestCase = false
@@ -816,13 +840,13 @@ function parseJavascript(document, diagnostics) {
 				state.localVariables.push(node.id.name)
 			}
 
-			
+
 			walker.base.VariableDeclarator(node, state, c)
 		},
 
 		Identifier(node, state, c) {
 			if (!state.imInTestCase) {
-				
+
 				walker.base.Identifier(node, state, c)
 				return
 			}
@@ -831,7 +855,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.12.4")
 			}
 
-			
+
 			walker.base.Identifier(node, state, c)
 		}
 	})
@@ -874,7 +898,7 @@ function parseJavascript(document, diagnostics) {
 
 		Literal(node, state, c) {
 			if (!(typeof node.value === 'string' || node.value instanceof String) && !node.regex) {
-				
+
 				walker.base.Literal(node, null, c)
 				return
 			}
@@ -885,7 +909,7 @@ function parseJavascript(document, diagnostics) {
 			} else {
 				literalString = node.value
 			}
-			
+
 			this.innerDiagnostic(literalString, node, state)
 
 			walker.base.Literal(node, null, c)
@@ -920,14 +944,14 @@ function parseJavascript(document, diagnostics) {
 					}
 				}
 			}
-			 
+
 		}
 	})
 
 	let Visitor4 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				
+
 				walker.base.CallExpression(node, null, c)
 				return
 			}
@@ -960,7 +984,7 @@ function parseJavascript(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.1", "The test name is not specifying neither the starting scenario nor the expected result")
 			}
 
-			
+
 			walker.base.CallExpression(node, null, c)
 		}
 	})
@@ -971,13 +995,13 @@ function parseJavascript(document, diagnostics) {
 	let Visitor5 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				
+
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			state = { imInFixtureSection: false, imInActSection: false, imInAssertSection: false, errorFound: false, lastStatement: { startOffset: node.arguments[1].body.start, endOffset: node.arguments[1].body.end }, imInBody: true }
-			
+
 			walker.base.CallExpression(node, state, c)
 
 			if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !state.errorFound) {
@@ -993,14 +1017,14 @@ function parseJavascript(document, diagnostics) {
 		// Represent a statement in test cases, even in callback-styled code
 		ExpressionStatement(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				
+
 				walker.base.ExpressionStatement(node, null, c)
 				return
 			}
 
 			state.currentStatement = { startOffset: node.start, endOffset: node.end }
 
-			
+
 			walker.base.ExpressionStatement(node, state, c)
 
 			// this statement must go after the recursive call
@@ -1020,41 +1044,41 @@ function parseJavascript(document, diagnostics) {
 				state.imInActSection = true
 
 			} else if (state.imInActSection && statementSection.imInAssertSection) {
-				
+
 				state.imInActSection = false
 				state.imInAssertSection = true
-			
+
 			} else if (!state.imInFixtureSection && !state.imInActSection && !state.imInAssertSection && !statementSection.imInFixtureSection) {
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.startOffset, state.currentStatement.startOffset, "R.W.8.2", "The setup section is empty.")
-			
+
 			} else if (state.imInFixtureSection && statementSection.imInAssertSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.lastStatement.endOffset, state.currentStatement.startOffset, "R.W.8.2", "The act section is empty.")
-			
+
 			} else if (state.imInActSection && statementSection.imInFixtureSection) { // if declaration is in act section
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The declaration is inside the act section.")
-			
+
 			} else if (state.imInAssertSection && statementSection.imInFixtureSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The setup statement is inside the assert section.")
-			
+
 			} else if (state.imInAssertSection && statementSection.imInActSection) { // if no act section is present
-				
+
 				state.errorFound = true
 				addDiagnostic(document, diagnostics, state.currentStatement.startOffset, state.currentStatement.endOffset, "R.W.8.2", "The act statement is inside the assert section.")
-			
+
 			}
 		},
 
 		MemberExpression(node, state, c) {
 			if (!state || !state.imInBody) {
-				
+
 				walker.base.MemberExpression(node, null, c)
 				return
 			}
@@ -1080,10 +1104,10 @@ function parseJavascript(document, diagnostics) {
 					statementSection.imInAssertSection = true
 					this.check(state, statementSection)
 				}
-				
+
 			}
 
-			
+
 			walker.base.MemberExpression(node, state, c)
 
 			/* Check for act section */
@@ -1114,7 +1138,7 @@ function parseJavascript(document, diagnostics) {
 
 		VariableDeclaration(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				
+
 				walker.base.VariableDeclaration(node, null, c)
 				return
 			}
@@ -1125,14 +1149,14 @@ function parseJavascript(document, diagnostics) {
 				state.isJustOneDeclaration = true
 			}
 
-			
+
 			walker.base.VariableDeclaration(node, state, c)
 			state.isJustOneDeclaration = false
 		},
 
 		VariableDeclarator(node, state, c) {
 			if (!state || !state.imInBody) { // If the state is undefined, the node is outside a method body
-				
+
 				walker.base.VariableDeclarator(node, null, c)
 				return
 			}
@@ -1153,7 +1177,7 @@ function parseJavascript(document, diagnostics) {
 
 			this.check(state, statementSection)
 
-			
+
 			walker.base.VariableDeclarator(node, state, c)
 		}
 
@@ -1162,12 +1186,12 @@ function parseJavascript(document, diagnostics) {
 	let Visitor6 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name == 'afterAll' || node.callee.name == 'beforeAll') {
-				addDiagnostic(document, diagnostics, node.start,node.end, "R.W.12.5", "Usage of setup/tear down method.")
-				addDiagnostic(document, diagnostics, node.start,node.end, "R.W.13", "Usage of setup/tear down method.")
-				addDiagnostic(document, diagnostics, node.start,node.end, "R.W.17", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.12.5", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.13", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.17", "Usage of setup/tear down method.")
 			}
 
-			
+
 			walker.base.CallExpression(node, state, c)
 		}
 	})
@@ -1175,13 +1199,13 @@ function parseJavascript(document, diagnostics) {
 	let Visitor7 = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
-				
+
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
-			state = {numberOfStatements: 0}
-			
+			state = { numberOfStatements: 0 }
+
 			walker.base.CallExpression(node, state, c)
 
 			if (state.numberOfStatements > 20) {
@@ -1193,27 +1217,27 @@ function parseJavascript(document, diagnostics) {
 
 		ExpressionStatement(node, state, c) {
 			if (!state) {
-				
+
 				walker.base.ExpressionStatement(node, state, c)
 				return
 			}
 
 			state.numberOfStatements++
 
-			
+
 			walker.base.ExpressionStatement(node, state, c)
 		},
 
 		VariableDeclaration(node, state, c) {
 			if (!state) {
-				
+
 				walker.base.VariableDeclaration(node, state, c)
 				return
 			}
 
 			state.numberOfStatements++
 
-			
+
 			walker.base.VariableDeclaration(node, state, c)
 		}
 	})
@@ -1235,13 +1259,13 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			
+
 			walker.base.CallExpression(node, state, c)
 		},
 
 		ImportDeclaration(node, state, c) {
 			addDiagnostic(document, diagnostics, node.start, node.end, "R.W.16", "Use of a third-party library.")
-		
+
 			walker.base.ImportDeclaration(node, state, c)
 		}
 	})
@@ -1256,14 +1280,14 @@ function parseJavascript(document, diagnostics) {
 			let diagnosedPattern = patterns.find(pattern => chain.includes(pattern))
 
 			if (!diagnosedPattern) {
-				
+
 				walker.base.CallExpression(node, state, c)
 				return
 			}
 
 			addDiagnostic(document, diagnostics, node.start, node.end, "R.D.0", `Use of ${diagnosedPattern}.`)
 
-			
+
 			walker.base.CallExpression(node, state, c)
 		}
 	})
@@ -1284,8 +1308,9 @@ function parseJavascript(document, diagnostics) {
 		/* Probable parsing error */
 		console.error(err)
 	})
-	
+
 }
+
 
 function getChild(node) {
 	return node[0].children
@@ -1383,7 +1408,7 @@ function buildDiagnostic(document, start, end, code, message, specificMessage) {
 			)
 		]
 	}
-	
+
 
 	return diagnostic
 }
