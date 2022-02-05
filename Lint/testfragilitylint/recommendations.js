@@ -39,7 +39,7 @@ const recommendations = [
     },
     {
         id: "R.W.6",
-        message: `Keep names and ids of elements clear to everyone.`,
+        message: `Keep names of variables clear to everyone.`,
         scope: Literal
     },
     {

@@ -289,8 +289,6 @@ function parseJava(document, diagnostics) {
 		blockStatement(node) {
 			let state = {chain: []}
 			super.blockStatement(node, state)
-
-			console.log(state.chain)
 		}
 
 		/* Method to provide better precision */
@@ -348,7 +346,7 @@ function parseJava(document, diagnostics) {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of absolute XPath.")
 			} else if (state && state.isXpathLocator) {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3")
-			} else if (state && state.isLinkTextLocator) {
+			} else if ((state && state.isLinkTextLocator) || literalString.includes('link=')) {
 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.19")
 			} else if (!literalString.includes('http')) {
 				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
@@ -365,7 +363,7 @@ function parseJava(document, diagnostics) {
 			if (literalString.includes("\"")) {
 				//console.log(literalString)
 				let firstQuoteIndex = literalString.indexOf("\"") + 1
-				let lastQuoteIndex = literalString.lastIndexOf("\"") - 1
+				let lastQuoteIndex = literalString.indexOf("\"", firstQuoteIndex + 1)
 				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
 
 				let innerNode = Object.assign({}, node)
@@ -377,7 +375,7 @@ function parseJava(document, diagnostics) {
 			} else if (literalString.includes("\'")) {
 				//console.log(literalString)
 				let firstQuoteIndex = literalString.indexOf("\'") + 1
-				let lastQuoteIndex = literalString.lastIndexOf("\'")
+				let lastQuoteIndex = literalString.indexOf("\'", firstQuoteIndex + 1)
 				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
 
 				let innerNode = Object.assign({}, node)
@@ -709,8 +707,33 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
+	let Visitor11 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		methodDeclaration(node) {
+			//if (isTestCase(node)) { // the rule is valid also for non-test methods actually
+				let state = { imInMethod: true}
+				super.methodDeclaration(node, state)
+			//}
+			
+		}
+
+		variableDeclaratorId(node, state) {
+			if (!state || !state.imInMethod) {
+				super.variableDeclaratorId(node)
+				return // If the state is undefined, the node is outside a method body
+			}
+
+			let identifier = node.Identifier[0].image
+
+			if (identifier.length < 2 && identifier != 'i') { // need stronger heuristics
+				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.6", "The variable name is too short.")
+			}
+			
+			super.variableDeclaratorId(node)
+		}
+	}
+
 	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4()/* , new Visitor5() */, new Visitor6(),
-	new Visitor7(), Visitor8, new Visitor9(), new Visitor10()]
+	new Visitor7(), Visitor8, new Visitor9(), new Visitor10(), new Visitor11()]
 
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
