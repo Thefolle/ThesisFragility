@@ -642,8 +642,42 @@ function parseJava(document, diagnostics) {
 		})
 	}
 
+	let Visitor9 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		importDeclaration(node) {
+			addDiagnostic(document, diagnostics, node.Import[0].startOffset, node.Semicolon[0].endOffset, "R.W.16")
+
+			super.importDeclaration(node)
+		}
+	}
+
+	let Visitor10 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		blockStatement(node) {
+			let state =  {chain: []}
+			super.blockStatement(node, state)
+			
+			const pattern = ['Thread', 'sleep']
+			if (pattern.every(word => state.chain.map(identifier => identifier.image).includes(word))) {
+				let threadWord = state.chain.find(method => method.image == 'Thread')
+				let sleepWord = state.chain.find(method => method.image == 'sleep')
+				addDiagnostic(document, diagnostics, threadWord.startOffset, sleepWord.endOffset + 1, "R.D.0")
+			}
+		}
+
+		fqnOrRefTypePartCommon(node, state) {
+			if (!state || !state.chain) {
+				super.fqnOrRefTypePartCommon(node)
+				return
+			}
+
+			state.chain.push(node.Identifier[0])
+
+			super.fqnOrRefTypePartCommon(node)
+		}
+	}
+
 	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4()/* , new Visitor5() */, new Visitor6(),
-	new Visitor7(), Visitor8]
+	new Visitor7(), Visitor8, new Visitor9(), new Visitor10()]
+
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			if (typeof visitor === 'object') {
