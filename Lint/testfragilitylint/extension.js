@@ -286,10 +286,49 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
+		blockStatement(node) {
+			let state = {chain: []}
+			super.blockStatement(node, state)
+
+			console.log(state.chain)
+		}
+
 		/* Method to provide better precision */
-		fqnOrRefTypePartRest(node) {
-			let calledMethod = getChild(node.fqnOrRefTypePartCommon).Identifier[0].image
-			let state = { calledMethod }
+		fqnOrRefTypePartCommon(node, state) {
+			if (!state || !state.chain) {
+				super.fqnOrRefTypePartCommon(node)
+				return
+			}
+
+			let chain = state.chain
+			chain.push(node.Identifier[0].image.toLowerCase())
+
+			if (chain.length >= 2) {
+				if (chain.includes('by')) {
+					if (chain.includes('css')) {
+						state.isCssLocator = true
+					} else if (chain.includes('xpath')) {
+						state.isXpathLocator = true
+					} else if (chain.includes('classname')) {
+						state.isClassNameLocator = true
+					} else if (chain.includes('linktext') || chain.includes('partiallinktext')) {
+						state.isLinkTextLocator = true
+					} else if (chain.includes('name')) {
+						state.isNameLocator = true
+					} else if (chain.includes('id')) {
+						state.isIdLocator = true
+					} else if (chain.includes('tagname')) {
+						state.isTagLocator = true
+					} else if (chain.includes('model')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isModelLocator = true
+					} else if (chain.includes('binding')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isBindingLocator = true
+					} else if (chain.includes('repeater')) { // Note that at the moment, this is only supported for AngularJS apps.
+						state.isRepeaterLocator = true
+					}
+				}
+			}
+
 			super.fqnOrRefTypePartRest(node, state)
 		}
 
@@ -302,29 +341,24 @@ function parseJava(document, diagnostics) {
 				literalString = literalString.substring(1, literalString.length - 1)
 			}
 
-			if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) == '/') {
-				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of relative XPath.")
+			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
 			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
-				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.10", "Use of relative XPath.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.11", "Use of relative XPath.") */
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of relative XPath.")
-			} else if (literalString.startsWith("css") || literalString.includes('#') || literalString.includes('>')) {
-				/* 				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.2", "Use of CSS locator.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.8", "Use of CSS locator.")
-								addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.9", "Use of CSS locator.") */
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.18", "Use of CSS locator.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of absolute XPath.")
+			} else if (state && state.isXpathLocator) {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3")
+			} else if (state && state.isLinkTextLocator) {
+				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.19")
+			} else if (!literalString.includes('http')) {
+				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of id locator mapped as CSS locator.")
+				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
+					if (literalString.includes('_')) {
+						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
+					}
+				}
 			}
 
 			/* Recur on inner string */
@@ -634,9 +668,9 @@ function parseJava(document, diagnostics) {
 			}
 		}
 
-		const patterns = ['todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
+		const patterns = ['import', 'todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
 		comments
-			.filter(comment => !patterns.includes(comment))
+			.filter(comment => !patterns.some(pattern => comment[0].includes(pattern)))
 			.forEach(comment => {
 				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21")
 		})
@@ -960,14 +994,11 @@ function parseJavascript(document, diagnostics) {
 		innerDiagnostic(literalString, node, state) {
 			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of relative XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of relative XPath.")
 			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.1", "Use of absolute XPath.")
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10", "Use of absolute XPath.")
 			} else if (state && state.isXpathLocator) {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.10")
 			} else if (!literalString.includes('http')) {
 				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
 					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of id locator mapped as CSS locator.")

@@ -48,11 +48,6 @@ const recommendations = [
         scope: Literal
     },
     {
-        id: "R.W.10",
-        message: `Do not use XPath locators as they may break tests that rely upon timeouts.`,
-        scope: Literal
-    },
-    {
         id: "R.W.12.0",
         message: `First write end-to-end tests, then unit tests.`,
         scope: TestSuite
