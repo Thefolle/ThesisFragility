@@ -139,7 +139,7 @@ function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
 
 
-	let Visitor1 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let DriverVariableVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -226,7 +226,7 @@ function parseJava(document, diagnostics) {
 	}
 
 	/* No need to compute global variables separately, as Java doesn't support hoisting */
-	let Visitor2 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let GlobalVariablesVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.context = { globalVariables: [] };
@@ -280,7 +280,7 @@ function parseJava(document, diagnostics) {
 
 	}
 
-	let Visitor3 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let LocatorsVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -339,7 +339,12 @@ function parseJava(document, diagnostics) {
 				literalString = literalString.substring(1, literalString.length - 1)
 			}
 
-			if (!state || ((state && !state.chain.includes('open')) && !literalString.includes('http'))) { // condition to mask all rules
+			const urlPatterns = ['http']
+			const imagePatterns = ['gif', 'png', 'jpg', 'jpeg', 'bmp']
+			const localDrivePatterns = ['downloads', 'desktop']
+			const driverPatterns = ['chrome', 'driver']
+			const falsePositives = [...urlPatterns, ...imagePatterns, ...localDrivePatterns, ...driverPatterns]
+			if (!state || ((state && !state.chain.includes('open')) && !falsePositives.some(falsePositive => literalString.includes(falsePositive)))) { // condition to mask all rules
 				if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
 				} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/') { // the open method accepts URLs
@@ -359,6 +364,10 @@ function parseJava(document, diagnostics) {
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
 					if (literalString.includes('_')) {
 						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
+					}
+				} else if ((state && state.isTagLocator)) {
+					if (!chain.some(calledMethod => calledMethod.endsWith('s'))) {
+						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.20", "Use of a tag locator to find only one element.")
 					}
 				}
 			}
@@ -395,7 +404,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor4 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let TestCaseNamesVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -446,7 +455,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor5 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let TestCaseSectionsVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -576,7 +585,7 @@ function parseJava(document, diagnostics) {
 
 	}
 
-	let Visitor6 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let FixtureMethodsVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -624,7 +633,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor7 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let TestCaseLengthVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super();
 			this.validateVisitor();
@@ -661,7 +670,7 @@ function parseJava(document, diagnostics) {
 
 	}
 
-	let Visitor8 = function () {
+	let CommentsVisitor = function () {
 		let matches = document.getText().matchAll('//.*')
 		let comments = []
 		for (let match of matches) {
@@ -670,15 +679,15 @@ function parseJava(document, diagnostics) {
 			}
 		}
 
-		const patterns = ['import', 'todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async']
+		const patterns = ['import', 'todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async', '= new', '()']
 		comments
 			.filter(comment => !patterns.some(pattern => comment[0].includes(pattern)))
 			.forEach(comment => {
-				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21")
+				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21", "Use of a comment to describe the behaviour.")
 			})
 	}
 
-	let Visitor9 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let ExternalLibrariesVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		importDeclaration(node) {
 			addDiagnostic(document, diagnostics, node.Import[0].startOffset, node.Semicolon[0].endOffset, "R.W.16")
 
@@ -686,7 +695,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor10 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let FixedTimeWaitVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		blockStatement(node) {
 			let state = { chain: [] }
 			super.blockStatement(node, state)
@@ -711,7 +720,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor11 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let VariablesNameVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		methodDeclaration(node) {
 			//if (isTestCase(node)) { // the rule is valid also for non-test methods actually
 			let state = { imInMethod: true }
@@ -736,7 +745,7 @@ function parseJava(document, diagnostics) {
 		}
 	}
 
-	let Visitor12 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+	let TestCaseTagsVisitor = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
 			super()
 			this.validateVisitor()
@@ -764,8 +773,8 @@ function parseJava(document, diagnostics) {
 	}
 
 
-	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4()/* , new Visitor5() */, new Visitor6(),
-	new Visitor7(), Visitor8, new Visitor9(), new Visitor10(), new Visitor11(), new Visitor12()]
+	let visitors = [new DriverVariableVisitor(), new GlobalVariablesVisitor(), new LocatorsVisitor(), new TestCaseNamesVisitor()/* , new TestCaseSectionsVisitor() */, new FixtureMethodsVisitor(),
+	new TestCaseLengthVisitor(), CommentsVisitor, new ExternalLibrariesVisitor(), new FixedTimeWaitVisitor(), new VariablesNameVisitor(), new TestCaseTagsVisitor()]
 
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
@@ -851,7 +860,7 @@ function parseJavascript(document, diagnostics) {
 			addDiagnostic(document, diagnostics, multiLineNonBlockDiagnostic.initialCommentOffset, multiLineNonBlockDiagnostic.lastCommentOffset, "R.W.21", "Use of a comment to describe the behaviour.")
 	})
 
-	let Visitor1 = walker.make({
+	let DriverVariableVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (state && state.driverVariable) return
 
@@ -925,7 +934,7 @@ function parseJavascript(document, diagnostics) {
 
 	})
 
-	let Visitor2 = walker.make({
+	let GlobalVariablesVisitor = walker.make({
 		Program(node, junkState, c) {
 			let state = { globalVariables: [] }
 
@@ -983,7 +992,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let Visitor3 = walker.make({
+	let LocatorsVisitor = walker.make({
 		CallExpression(node, junkState, c) {
 			let chain = []
 			getChain(node, chain)
@@ -1068,7 +1077,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let Visitor4 = walker.make({
+	let TestCaseNamesVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
 
@@ -1112,7 +1121,7 @@ function parseJavascript(document, diagnostics) {
 	/* This rule has complex heuristics:
 	*	- Selenium can be used to perform visual unit testing, but unit tests are not structured as use cases (see navbar.test.js)
 	*/
-	let Visitor5 = walker.make({
+	let TestCaseSectionsVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
 
@@ -1303,7 +1312,7 @@ function parseJavascript(document, diagnostics) {
 
 	})
 
-	let Visitor6 = walker.make({
+	let FixtureMethodsVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name == 'afterAll' || node.callee.name == 'beforeAll') {
 				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.12.5", "Usage of setup/tear down method.")
@@ -1316,7 +1325,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let Visitor7 = walker.make({
+	let TestCaseLengthVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name != 'it' && node.callee.name != 'test') {
 
@@ -1362,7 +1371,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let Visitor8 = walker.make({
+	let CommentsVisitor = walker.make({
 		VariableDeclaration(node, state, c) {
 			node.declarations.forEach(variableDeclarator => {
 				let chain = []
@@ -1390,7 +1399,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let Visitor9 = walker.make({
+	let ExternalLibrariesVisitor = walker.make({
 		CallExpression(node, state, c) {
 			const patterns = ['setTimeout', 'sleep']
 
@@ -1412,7 +1421,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let visitors = [Visitor1, Visitor2, Visitor3, Visitor4/* , Visitor5 */, Visitor6, Visitor7, Visitor8, Visitor9]
+	let visitors = [DriverVariableVisitor, GlobalVariablesVisitor, LocatorsVisitor, TestCaseNamesVisitor/* , TestCaseSectionsVisitor */, FixtureMethodsVisitor, TestCaseLengthVisitor, CommentsVisitor, ExternalLibrariesVisitor]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			walker.recursive(root, null, visitor, walker.base)

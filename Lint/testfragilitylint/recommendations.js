@@ -109,7 +109,7 @@ const recommendations = [
     },
     {
         id: "R.W.17",
-        message: `Test cases must not continue the workflow of other test cases.`,
+        message: `Test cases must not directly continue the workflow of other test cases.`,
         scope: TestCase
     },
     {
