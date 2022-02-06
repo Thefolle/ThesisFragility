@@ -137,7 +137,7 @@ function generateReport(document, diagnostics) {
 
 function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
-	
+
 
 	let Visitor1 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		constructor() {
@@ -287,7 +287,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatement(node) {
-			let state = {chain: []}
+			let state = { chain: [] }
 			super.blockStatement(node, state)
 		}
 
@@ -339,19 +339,23 @@ function parseJava(document, diagnostics) {
 				literalString = literalString.substring(1, literalString.length - 1)
 			}
 
-			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
-			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of absolute XPath.")
-			} else if (state && state.isXpathLocator) {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3")
-			} else if ((state && state.isLinkTextLocator) || literalString.includes('link=')) {
-				addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.19")
-			} else if (!literalString.includes('http')) {
-				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
+			if (!state || ((state && !state.chain.includes('open')) && !literalString.includes('http'))) { // condition to mask all rules
+				if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of relative XPath.")
+				} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/') { // the open method accepts URLs
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.1", "Use of absolute XPath.")
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of absolute XPath.")
+				} else if (state && state.isXpathLocator) {
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3")
+				} else if ((state && state.isLinkTextLocator) || literalString.includes('link=')) {
+					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.19")
+				} else if ((state && state.isIdLocator)) {
+					if (literalString.includes('_')) {
+						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
+					}
+				} else if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of id locator mapped as CSS locator.")
-				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
+				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || ((literalString.includes('.') && !literalString.endsWith('.')) && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
 					if (literalString.includes('_')) {
 						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
@@ -657,7 +661,7 @@ function parseJava(document, diagnostics) {
 
 	}
 
-	let Visitor8 = function() {
+	let Visitor8 = function () {
 		let matches = document.getText().matchAll('//.*')
 		let comments = []
 		for (let match of matches) {
@@ -671,7 +675,7 @@ function parseJava(document, diagnostics) {
 			.filter(comment => !patterns.some(pattern => comment[0].includes(pattern)))
 			.forEach(comment => {
 				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21")
-		})
+			})
 	}
 
 	let Visitor9 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
@@ -684,9 +688,9 @@ function parseJava(document, diagnostics) {
 
 	let Visitor10 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		blockStatement(node) {
-			let state =  {chain: []}
+			let state = { chain: [] }
 			super.blockStatement(node, state)
-			
+
 			const pattern = ['Thread', 'sleep']
 			if (pattern.every(word => state.chain.map(identifier => identifier.image).includes(word))) {
 				let threadWord = state.chain.find(method => method.image == 'Thread')
@@ -710,10 +714,10 @@ function parseJava(document, diagnostics) {
 	let Visitor11 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
 		methodDeclaration(node) {
 			//if (isTestCase(node)) { // the rule is valid also for non-test methods actually
-				let state = { imInMethod: true}
-				super.methodDeclaration(node, state)
+			let state = { imInMethod: true }
+			super.methodDeclaration(node, state)
 			//}
-			
+
 		}
 
 		variableDeclaratorId(node, state) {
@@ -727,13 +731,41 @@ function parseJava(document, diagnostics) {
 			if (identifier.length < 2 && identifier != 'i') { // need stronger heuristics
 				addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.6", "The variable name is too short.")
 			}
-			
+
 			super.variableDeclaratorId(node)
 		}
 	}
 
+	let Visitor12 = class extends javaParser.BaseJavaCstVisitorWithDefaults {
+		constructor() {
+			super()
+			this.validateVisitor()
+		}
+
+		methodDeclaration(node) {
+			let state = {}
+			if (isTestCase(node) && !hasTags(node)) {
+				state.isRuleMatched = true
+			}
+
+			super.methodDeclaration(node, state)
+		}
+
+		methodDeclarator(node, state) {
+			if (!state || !state.isRuleMatched) {
+				super.methodDeclarator(node)
+				return
+			}
+
+			addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.12.7", "The test case has no recognized tags.")
+
+			super.methodDeclarator(node)
+		}
+	}
+
+
 	let visitors = [new Visitor1(), new Visitor2(), new Visitor3(), new Visitor4()/* , new Visitor5() */, new Visitor6(),
-	new Visitor7(), Visitor8, new Visitor9(), new Visitor10(), new Visitor11()]
+	new Visitor7(), Visitor8, new Visitor9(), new Visitor10(), new Visitor11(), new Visitor12()]
 
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
@@ -1408,8 +1440,8 @@ function getLocation(node) {
 	return node[0].location
 }
 
-function getMethodAnnotations(node) {
-	let annotations = node.methodModifier
+function getMethodAnnotations(methodDeclaration) {
+	let annotations = methodDeclaration.methodModifier
 		.map(modifier => modifier.children)
 		.filter(modifier => modifier.annotation)
 		.map(annotation => getChild(getChild(annotation.annotation).typeName).Identifier[0].image)
@@ -1421,6 +1453,16 @@ function isTestCase(methodDeclaration) {
 	let annotations = getMethodAnnotations(methodDeclaration)
 
 	if (annotations.includes('Test')) {
+		return true
+	} else {
+		return false
+	}
+}
+
+function hasTags(methodDeclaration) {
+	let annotations = getMethodAnnotations(methodDeclaration)
+
+	if (annotations.includes('Tag') /* In JUnit 5 */ || annotations.includes('Category') /* In JUnit 4 */) {
 		return true
 	} else {
 		return false

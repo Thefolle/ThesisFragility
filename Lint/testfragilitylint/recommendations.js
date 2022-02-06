@@ -84,7 +84,7 @@ const recommendations = [
     },
     {
         id: "R.W.12.7",
-        message: `Tag related test cases in order to run a subset of them.`,
+        message: `Tag related test cases in order to run just a subset of them.`,
         scope: TestSuite
     },
     {
