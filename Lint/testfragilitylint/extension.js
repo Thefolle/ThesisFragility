@@ -10,6 +10,7 @@ const javaParser = require('java-parser')
 
 const { recommendations } = require('./recommendations');
 
+const chartReporter = require('./ChartReporter')
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -68,6 +69,11 @@ function activate(context) {
 		generateReport(document, diagnostics)
 	})
 	context.subscriptions.push(generateReportCommand)
+
+	let chartReportPanel = vscode.window.createWebviewPanel('chart', 'Chart', vscode.ViewColumn.Beside, {
+		enableScripts: true
+	})
+	chartReportPanel.webview.html = chartReporter.getHTMLcontent()
 
 	if (vscode.window.activeTextEditor) {
 		updateDiagnostics(vscode.window.activeTextEditor.document, collection);
