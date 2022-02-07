@@ -70,7 +70,7 @@ function activate(context) {
 	})
 	context.subscriptions.push(generateReportCommand)
 
-	let chartReportPanel = vscode.window.createWebviewPanel('chart', 'Chart', vscode.ViewColumn.Beside, {
+	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
 		enableScripts: true
 	})
 	chartReportPanel.webview.html = chartReporter.getHTMLcontent()

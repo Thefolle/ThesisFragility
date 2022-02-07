@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Coding</title>
+    <title>Chart Report</title>
     <script src="https://cdn.plot.ly/plotly-2.8.3.min.js"></script>
 </head>
 
 <body>
-    <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />
 
-    <div id="chart" style="width:600px;height:250px;"></div>
+    <div id="chart" style="width: fit-content; height: fit-content;"></div>
 
     <script>
         chart = document.getElementById('chart');
@@ -26,12 +25,19 @@
                 y: y,
                 type: 'histogram',
                 marker: {
-                    color: 'pink',
+                    color: 'violet',
                 },
             }
         ];
-        Plotly.newPlot(chart, data);
 
+        var layout = {
+            bargap: 0.1,
+            xaxis: { title: "# violations" },
+            yaxis: { title: "Test cases" },
+            title: 'How are violations distributed in test cases?'
+        }
+
+        Plotly.newPlot(chart, data, layout);
 
     </script>
 </body>
