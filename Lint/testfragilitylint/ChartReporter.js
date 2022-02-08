@@ -1,8 +1,8 @@
 /**
  * @returns HTML content of the webview panel as string
  */
-function getHTMLcontent() {
-    let result = prepareDataAndLayout()
+function getHTMLcontent(cleanedData) {
+    let result = prepareDataAndLayout(cleanedData)
 
     let html = `<!DOCTYPE html>
     <html lang="en">
@@ -32,16 +32,11 @@ function getHTMLcontent() {
     return html
 }
 
-function prepareDataAndLayout() {
-
-    var y = [];
-    for (var i = 0; i < 500; i++) {
-        y[i] = `Test case ${i % 20}`
-    }
+function prepareDataAndLayout(cleanedData) {
 
     var data = [
         {
-            y: y,
+            y: cleanedData,
             type: 'histogram',
             marker: {
                 color: 'violet',
@@ -56,7 +51,7 @@ function prepareDataAndLayout() {
             title: "# violations"
         },
         yaxis: {
-            title: "Test cases",
+            title: "Recommendations",
             type: 'category',
             tickmode: 'linear',
 
@@ -64,7 +59,12 @@ function prepareDataAndLayout() {
             automargin: true,
             standoff: 30
         },
-        title: 'How are violations distributed in test cases?'
+        title: {
+            text: 'How are violations distributed in test cases?',
+            font: {
+                size: 24
+            }
+        }
     }
 
     return {data, layout}

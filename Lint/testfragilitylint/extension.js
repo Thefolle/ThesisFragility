@@ -70,10 +70,20 @@ function activate(context) {
 	})
 	context.subscriptions.push(generateReportCommand)
 
-	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
-		enableScripts: true
+	let generateChartReportCommand = vscode.commands.registerCommand('Generate Chart Report', function () {
+		if (!vscode.window.activeTextEditor) {
+			vscode.window.showInformationMessage("No text editor has focus. Please, open a file and issue the command again.")
+			return
+		}
+
+		let document = vscode.window.activeTextEditor.document
+		if (!supportLanguage(document.languageId)) {
+			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
+		}
+		let diagnostics = collection.get(document.uri)
+		generateChartReport(document, diagnostics)
 	})
-	chartReportPanel.webview.html = chartReporter.getHTMLcontent()
+	context.subscriptions.push(generateChartReportCommand)
 
 	if (vscode.window.activeTextEditor) {
 		updateDiagnostics(vscode.window.activeTextEditor.document, collection);
@@ -139,6 +149,14 @@ function generateReport(document, diagnostics) {
 	workspaceEdit.createFile(reportUri, { overwrite: true, ignoreIfExists: false })
 	workspaceEdit.insert(reportUri, new vscode.Position(0, 0), JSON.stringify(diagnostics))
 	vscode.workspace.applyEdit(workspaceEdit)
+}
+
+function generateChartReport(document, diagnostics) {
+	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
+		enableScripts: true
+	})
+	let cleanedData = diagnostics.map(diagnostic => diagnostic.message)
+	chartReportPanel.webview.html = chartReporter.getHTMLcontent(cleanedData)
 }
 
 function parseJava(document, diagnostics) {

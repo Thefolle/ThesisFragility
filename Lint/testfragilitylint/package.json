@@ -31,6 +31,12 @@
         "title": "Generate Report for the Current File",
         "category": "Lint",
         "shortTitle": "Report"
+      },
+      {
+        "command": "Generate Chart Report",
+        "title": "Generate Chart Report for the Current File",
+        "category": "Lint",
+        "shortTitle": "Chart Report"
       }
     ]
   },
