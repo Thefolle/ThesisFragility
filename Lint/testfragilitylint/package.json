@@ -27,18 +27,32 @@
         "shortTitle": "Lint for Fragility"
       },
       {
-        "command": "Generate Report",
-        "title": "Generate Report for the Current File",
-        "category": "Lint",
-        "shortTitle": "Report"
-      },
-      {
-        "command": "Generate Chart Report",
+        "command": "Generate Chart Report for File",
         "title": "Generate Chart Report for the Current File",
         "category": "Lint",
-        "shortTitle": "Chart Report"
+        "shortTitle": "File Chart Report"
+      },
+      {
+        "command": "Generate Chart Report for Folder",
+        "title": "Generate Chart Report for the Current Folder",
+        "category": "Lint",
+        "shortTitle": "Folder Chart Report"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "Generate Chart Report for Folder",
+          "when": "explorerResourceIsFolder == true",
+          "group": "Lint"
+        },
+        {
+          "command": "Generate Chart Report for File",
+          "when": "explorerResourceIsFolder == false",
+          "group": "Lint"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",

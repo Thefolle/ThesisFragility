@@ -32,8 +32,6 @@ function activate(context) {
 
 	context.subscriptions.push(activateCommand);
 
-	//vscode.workspace.
-
 	/* vscode.languages.registerHoverProvider('javascript', {
 		provideHover(document, position, token) {
 			let a = document.getText(new vscode.Range(position, position.translate(0, 4)))
@@ -62,7 +60,7 @@ function activate(context) {
 		}
 
 		let document = vscode.window.activeTextEditor.document
-		if (!supportLanguage(document.languageId)) {
+		if (!isLanguageSupported(document.languageId)) {
 			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
 		}
 		let diagnostics = collection.get(document.uri)
@@ -70,20 +68,25 @@ function activate(context) {
 	})
 	context.subscriptions.push(generateReportCommand)
 
-	let generateChartReportCommand = vscode.commands.registerCommand('Generate Chart Report', function () {
+	let generateFileChartReportCommand = vscode.commands.registerCommand('Generate Chart Report for File', function () {
 		if (!vscode.window.activeTextEditor) {
 			vscode.window.showInformationMessage("No text editor has focus. Please, open a file and issue the command again.")
 			return
 		}
 
 		let document = vscode.window.activeTextEditor.document
-		if (!supportLanguage(document.languageId)) {
+		if (!isLanguageSupported(document.languageId)) {
 			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
 		}
 		let diagnostics = collection.get(document.uri)
-		generateChartReport(document, diagnostics)
+		generateChartReport(diagnostics)
 	})
-	context.subscriptions.push(generateChartReportCommand)
+	context.subscriptions.push(generateFileChartReportCommand)
+
+	let generateFolderChartReportCommand = vscode.commands.registerCommand('Generate Chart Report for Folder', function (folder) {
+		generateFolderChartReport(folder.path)
+	})
+	context.subscriptions.push(generateFolderChartReportCommand)
 
 	if (vscode.window.activeTextEditor) {
 		updateDiagnostics(vscode.window.activeTextEditor.document, collection);
@@ -103,43 +106,60 @@ function deactivate() {
  */
 function updateDiagnostics(document, collection) {
 	if (document) {
-		let language = document.languageId;
-		let diagnostics = []
+		let diagnostics = collectDiagnostics(document)
+		console.log(`Diagnostics of ${document.uri} have been collected.`)
 
-		if (!supportLanguage(language)) return
-
-		if (language == 'java') {
-			parseJava(document, diagnostics)
-		} else if (language == 'javascript') {
-			// if the file is actually a test file (not setup, configuration or application files)
-			let fileName = document.fileName.substring(document.fileName.lastIndexOf('\\') + 1)
-			if (['test', 'spec'].some(pattern => fileName.toLowerCase().includes(pattern))) {
-				parseJavascript(document, diagnostics);
-			}
-
-		}
-
-		if (diagnostics.length > 0) {
-			console.log(`Diagnostics of ${document.uri} have been collected.`)
-
-			// prioritize diagnostics by narrowing scope
-			diagnostics.sort((diagnostic1, diagnostic2) => {
-				let scope1 = recommendations.find(recommendation => recommendation.id == diagnostic1.code).scope
-				let scope2 = recommendations.find(recommendation => recommendation.id == diagnostic2.code).scope
-				return scope1 - scope2
-			})
-
-			collection.set(document.uri, diagnostics);
-		}
-		else collection.set(document.uri, [])
+		collection.set(document.uri, diagnostics);
 	} else {
 		collection.set(document.uri, []);
 	}
 }
 
-function supportLanguage(actualLanguage) {
+/**
+ * Collects the diagnostics given a text document
+ * @param {vscode.TextDocument} document 
+ * @returns {vscode.Diagnostic[]} diagnostics
+ */
+function collectDiagnostics(document) {
+	let language = document.languageId;
+	let diagnostics = []
+
+	if (!isLanguageSupported(language)) return
+
+	let fileName = document.fileName.substring(document.fileName.lastIndexOf('\\') + 1)
+	if (!isTestFile(fileName, language)) return
+
+	if (language == 'java') {
+		parseJava(document, diagnostics)
+	} else if (language == 'javascript') {
+		parseJavascript(document, diagnostics);
+	}
+
+	if (diagnostics.length > 0) {
+		// prioritize diagnostics by narrowing scope
+		diagnostics.sort((diagnostic1, diagnostic2) => {
+			let scope1 = recommendations.find(recommendation => recommendation.id == diagnostic1.code).scope
+			let scope2 = recommendations.find(recommendation => recommendation.id == diagnostic2.code).scope
+			return scope1 - scope2
+		})
+	}
+
+	return diagnostics
+}
+
+function isLanguageSupported(actualLanguage) {
 	if (['java', 'javascript'].includes(actualLanguage)) return true
 	else return false
+}
+
+function isTestFile(fileName, language) {
+	if (language == 'java' && ['test'].some(pattern => fileName.toLowerCase().includes(pattern))) {
+		return true
+	} else if (language == 'javascript' && ['test', 'spec'].some(pattern => fileName.toLowerCase().includes(pattern))) {
+		return true
+	}
+
+	return false
 }
 
 function generateReport(document, diagnostics) {
@@ -151,12 +171,39 @@ function generateReport(document, diagnostics) {
 	vscode.workspace.applyEdit(workspaceEdit)
 }
 
-function generateChartReport(document, diagnostics) {
+function generateChartReport(diagnostics) {
 	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
 		enableScripts: true
 	})
 	let cleanedData = diagnostics.map(diagnostic => diagnostic.message)
 	chartReportPanel.webview.html = chartReporter.getHTMLcontent(cleanedData)
+}
+
+function generateFolderChartReport(folderPath) {
+	vscode.workspace.findFiles(new vscode.RelativePattern(folderPath, "*[tT]est*")).then(uris => {
+
+		let folderDiagnostics = []
+
+		Promise.all(
+			uris
+				.map(uri => {
+					return new Promise((resolve, reject) => {
+						vscode.workspace.openTextDocument(uri).then(textDocument => { // triggers the onDidOpenTextDocument listener
+							let diagnostics = collectDiagnostics(textDocument)
+							folderDiagnostics.push(...diagnostics)
+
+							resolve()
+						}, reason => {
+							reject(reason)
+						})
+					})
+				})
+		).then(_ => {
+			generateChartReport(folderDiagnostics)
+		}).catch(reason => {
+			vscode.window.showErrorMessage(reason)
+		})
+	})
 }
 
 function parseJava(document, diagnostics) {
@@ -390,7 +437,7 @@ function parseJava(document, diagnostics) {
 						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
 					}
 				} else if ((state && state.isTagLocator)) {
-					if (!chain.some(calledMethod => calledMethod.endsWith('s'))) {
+					if (!state.chain.some(calledMethod => calledMethod.endsWith('s'))) {
 						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.20", "Use of a tag locator to find only one element.")
 					}
 				}

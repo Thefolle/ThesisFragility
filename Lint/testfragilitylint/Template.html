@@ -12,34 +12,6 @@
 
     <div id="chart" style="width: fit-content; height: fit-content;"></div>
 
-    <script>
-        chart = document.getElementById('chart');
-
-        var y = [];
-        for (var i = 0; i < 500; i++) {
-            y[i] = Math.random();
-        }
-
-        var data = [
-            {
-                y: y,
-                type: 'histogram',
-                marker: {
-                    color: 'violet',
-                },
-            }
-        ];
-
-        var layout = {
-            bargap: 0.1,
-            xaxis: { title: "# violations" },
-            yaxis: { title: "Test cases" },
-            title: 'How are violations distributed in test cases?'
-        }
-
-        Plotly.newPlot(chart, data, layout);
-
-    </script>
 </body>
 
 </html>
