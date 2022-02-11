@@ -12,8 +12,7 @@ const { recommendations } = require('./recommendations');
 
 const chartReporter = require('./ChartReporter')
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -31,16 +30,6 @@ function activate(context) {
 	})
 
 	context.subscriptions.push(activateCommand);
-
-	/* vscode.languages.registerHoverProvider('javascript', {
-		provideHover(document, position, token) {
-			let a = document.getText(new vscode.Range(position, position.translate(0, 4)))
-			let b = document.languageId;
-			return {
-				contents: [b]
-			}
-		}
-	}) */
 
 
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
@@ -68,18 +57,20 @@ function activate(context) {
 	})
 	context.subscriptions.push(generateReportCommand)
 
-	let generateFileChartReportCommand = vscode.commands.registerCommand('Generate Chart Report for File', function () {
-		if (!vscode.window.activeTextEditor) {
-			vscode.window.showInformationMessage("No text editor has focus. Please, open a file and issue the command again.")
-			return
-		}
-
-		let document = vscode.window.activeTextEditor.document
-		if (!isLanguageSupported(document.languageId)) {
-			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
-		}
-		let diagnostics = collection.get(document.uri)
-		generateChartReport(document.uri, diagnostics)
+	let generateFileChartReportCommand = vscode.commands.registerCommand('Generate Chart Report for File', function (fileUri) {
+		vscode.workspace.openTextDocument(fileUri).then(document => {
+			if (!isLanguageSupported(document.languageId)) {
+				vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
+				return
+			} else if (!isTestFile(getResourceName(document.fileName), document.languageId)) {
+				vscode.window.showInformationMessage(`The file ${document.fileName} is not recognized 
+					as a test file. Test file names have to contain
+					${document.languageId === 'java' ? '\'Test\' or \'test\'' : '\'spec\' or \'test\''}`)
+				return
+			}
+			let diagnostics = collection.get(document.uri)
+			generateChartReport(document.uri, diagnostics)
+		})
 	})
 	context.subscriptions.push(generateFileChartReportCommand)
 
@@ -98,6 +89,10 @@ function activate(context) {
 function deactivate() {
 	console.log("Extension deactivated")
 	return undefined // must return this value if deallocation is synchronous
+}
+
+function getResourceName(fsPath) {
+	return fsPath.substring(fsPath.lastIndexOf('\\') + 1)
 }
 
 /**
@@ -126,7 +121,7 @@ function collectDiagnostics(document) {
 
 	if (!isLanguageSupported(language)) return
 
-	let fileName = document.fileName.substring(document.fileName.lastIndexOf('\\') + 1)
+	let fileName = getResourceName(document.fileName)
 	if (!isTestFile(fileName, language)) return
 
 	if (language == 'java') {
@@ -185,11 +180,13 @@ function generateChartReport(uri, diagnostics) {
 		const diagnosticPath = diagnostic.relatedInformation[0].location.uri.fsPath
 		return {
 			message: diagnostic.message,
-			testFileName: diagnosticPath.substring(diagnosticPath.lastIndexOf('\\') + 1) // location of the diagnostic
+			testFileName: getResourceName(diagnosticPath) // location of the diagnostic
 		}
 	})
 
-	chartReportPanel.webview.html = chartReporter.getHTMLcontent(uri, cleanedData)
+	let resourceName = getResourceName(uri.fsPath)
+
+	chartReportPanel.webview.html = chartReporter.getHTMLcontent(resourceName, cleanedData)
 }
 
 function generateFolderChartReport(folder) {

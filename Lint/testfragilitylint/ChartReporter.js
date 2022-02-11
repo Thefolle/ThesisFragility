@@ -1,8 +1,8 @@
 /**
  * @returns HTML content of the webview panel as string
  */
-function getHTMLcontent(uri, cleanedData) {
-    let result = prepareDataAndLayout(cleanedData)
+function getHTMLcontent(resourceName, cleanedData) {
+    let result = prepareDataAndLayout(resourceName, cleanedData)
 
     let html = `<!DOCTYPE html>
     <html lang="en">
@@ -32,10 +32,11 @@ function getHTMLcontent(uri, cleanedData) {
     return html
 }
 
-function prepareDataAndLayout(cleanedData) {
+function prepareDataAndLayout(resourceName, cleanedData) {
 
     var data = [
         {
+            name: 'Violations',
             y: cleanedData.map(row => row.message),
             type: 'histogram',
             marker: {
@@ -45,6 +46,7 @@ function prepareDataAndLayout(cleanedData) {
             visible: true // default trace shown
         },
         {
+            name: 'Test files',
             y: cleanedData.map(row => row.testFileName),
             type: 'histogram',
             marker: {
@@ -58,26 +60,33 @@ function prepareDataAndLayout(cleanedData) {
     var layout = {
         bargap: 0.2,
         xaxis: {
-            title: "# violations"
+            title: "# violations",
+            rangemode: 'tozero',
+            linewidth: 1,
+            showgrid: true
         },
         yaxis: {
-            title: "Recommendations",
+            //title: "Recommendations",
             type: 'category',
             tickmode: 'linear', // show all the categorical values
 
             /* Determine the horizontal width based on tick lengths and axis title standoff */
-            automargin: true,
-            standoff: 30
+            automargin: true
+            //standoff: 30
         },
         title: {
-            text: 'How are violations distributed in test cases?',
+            text: `How are violations distributed in ${resourceName}?`,
             font: {
                 size: 24
             }
         },
+        width: 900,
+        height: 500,
+
+        // define the dropdown
         updatemenus: [
             {
-                x: -2,
+                x: -0.5,
                 y: 1.1,
                 xanchor: 'left', // coordinates of the dropdown refer to its most left pixel
                 yanchor: 'top', // coordinates of the dropdown refer to its most top pixel
