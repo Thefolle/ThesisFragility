@@ -1,7 +1,7 @@
 /**
  * @returns HTML content of the webview panel as string
  */
-function getHTMLcontent(cleanedData) {
+function getHTMLcontent(uri, cleanedData) {
     let result = prepareDataAndLayout(cleanedData)
 
     let html = `<!DOCTYPE html>
@@ -27,7 +27,7 @@ function getHTMLcontent(cleanedData) {
     
     </html>`
 
-    //console.log(html) debug the interpolated html string
+    //console.log(html) // debug the interpolated html string
 
     return html
 }
@@ -36,14 +36,24 @@ function prepareDataAndLayout(cleanedData) {
 
     var data = [
         {
-            y: cleanedData,
+            y: cleanedData.map(row => row.message),
             type: 'histogram',
             marker: {
                 color: 'violet',
             },
-            opacity: 0.60
+            opacity: 0.60,
+            visible: true // default trace shown
+        },
+        {
+            y: cleanedData.map(row => row.testFileName),
+            type: 'histogram',
+            marker: {
+                color: 'violet',
+            },
+            opacity: 0.60,
+            visible: false
         }
-    ];
+    ]
 
     var layout = {
         bargap: 0.2,
@@ -53,7 +63,7 @@ function prepareDataAndLayout(cleanedData) {
         yaxis: {
             title: "Recommendations",
             type: 'category',
-            tickmode: 'linear',
+            tickmode: 'linear', // show all the categorical values
 
             /* Determine the horizontal width based on tick lengths and axis title standoff */
             automargin: true,
@@ -64,7 +74,27 @@ function prepareDataAndLayout(cleanedData) {
             font: {
                 size: 24
             }
-        }
+        },
+        updatemenus: [
+            {
+                x: -2,
+                y: 1.1,
+                xanchor: 'left', // coordinates of the dropdown refer to its most left pixel
+                yanchor: 'top', // coordinates of the dropdown refer to its most top pixel
+                buttons: [
+                    {
+                        method: 'restyle',
+                        args: ['visible', [true, false]],
+                        label: 'Group by rule'
+                    },
+                    {
+                        method: 'restyle',
+                        args: ['visible', [false, true]],
+                        label: 'Group by test file'
+                    }
+                ]
+            }
+        ]
     }
 
     return {data, layout}

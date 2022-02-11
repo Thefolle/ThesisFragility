@@ -79,12 +79,12 @@ function activate(context) {
 			vscode.window.showInformationMessage(`The ${document.languageId} language is not supported.`)
 		}
 		let diagnostics = collection.get(document.uri)
-		generateChartReport(diagnostics)
+		generateChartReport(document.uri, diagnostics)
 	})
 	context.subscriptions.push(generateFileChartReportCommand)
 
 	let generateFolderChartReportCommand = vscode.commands.registerCommand('Generate Chart Report for Folder', function (folder) {
-		generateFolderChartReport(folder.path)
+		generateFolderChartReport(folder)
 	})
 	context.subscriptions.push(generateFolderChartReportCommand)
 
@@ -171,16 +171,29 @@ function generateReport(document, diagnostics) {
 	vscode.workspace.applyEdit(workspaceEdit)
 }
 
-function generateChartReport(diagnostics) {
+/**
+ * 
+ * @param {vscode.Uri} uri uri of the overall resource 
+ * @param {*} diagnostics 
+ */
+function generateChartReport(uri, diagnostics) {
 	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
 		enableScripts: true
 	})
-	let cleanedData = diagnostics.map(diagnostic => diagnostic.message)
-	chartReportPanel.webview.html = chartReporter.getHTMLcontent(cleanedData)
+
+	let cleanedData = diagnostics.map(diagnostic => {
+		const diagnosticPath = diagnostic.relatedInformation[0].location.uri.fsPath
+		return {
+			message: diagnostic.message,
+			testFileName: diagnosticPath.substring(diagnosticPath.lastIndexOf('\\') + 1) // location of the diagnostic
+		}
+	})
+
+	chartReportPanel.webview.html = chartReporter.getHTMLcontent(uri, cleanedData)
 }
 
-function generateFolderChartReport(folderPath) {
-	vscode.workspace.findFiles(new vscode.RelativePattern(folderPath, "*[tT]est*")).then(uris => {
+function generateFolderChartReport(folder) {
+	vscode.workspace.findFiles(new vscode.RelativePattern(folder.path, "*[tT]est*")).then(uris => {
 
 		let folderDiagnostics = []
 
@@ -199,7 +212,7 @@ function generateFolderChartReport(folderPath) {
 					})
 				})
 		).then(_ => {
-			generateChartReport(folderDiagnostics)
+			generateChartReport(folder, folderDiagnostics)
 		}).catch(reason => {
 			vscode.window.showErrorMessage(reason)
 		})
@@ -1607,18 +1620,19 @@ function buildDiagnostic(document, start, end, code, message, specificMessage) {
 
 	diagnostic.code = code
 	diagnostic.source = 'Fragility linter'
-	if (specificMessage) {
-		diagnostic.relatedInformation = [
-			new vscode.DiagnosticRelatedInformation(
-				new vscode.Location(
-					document.uri,
-					new vscode.Range(document.positionAt(start), document.positionAt(end))
-				),
-				specificMessage
-			)
-		]
+	if (!specificMessage) {
+		specificMessage = ""
 	}
 
+	diagnostic.relatedInformation = [
+		new vscode.DiagnosticRelatedInformation(
+			new vscode.Location(
+				document.uri,
+				new vscode.Range(document.positionAt(start), document.positionAt(end))
+			),
+			specificMessage
+		)
+	]
 
 	return diagnostic
 }
