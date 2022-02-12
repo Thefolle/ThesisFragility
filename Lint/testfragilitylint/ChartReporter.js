@@ -37,7 +37,29 @@ function prepareDataAndLayout(resourceName, cleanedData) {
     var data = [
         {
             name: 'Violations',
-            y: cleanedData.map(row => row.message),
+            y: cleanedData.map(row => {
+                return `${row.message.slice(0, 30)}...`
+
+                /* Code to put line feeds in labels; however, labels may overflow the adjacent ones */
+                //let message = row.message
+                // message = message.trim() // avoids bad behaviours
+                //let length = message.length
+                //let i = 30
+                // while (i < length) {
+                //     let j
+                //     for (j = i; j < length && message.charAt(j) != ' '; j++);
+                //     if (j == length) break
+                //     message = message.substring(0, j) + '<br>' + message.substring(j + 1)
+                //     i += 30
+
+                //     if (i >= 90) {
+                //         message = message.slice(0, 90) + '...'
+                //         break
+                //     }
+                // }
+
+                //return message
+            }),
             type: 'histogram',
             marker: {
                 color: 'violet',
@@ -68,14 +90,15 @@ function prepareDataAndLayout(resourceName, cleanedData) {
         yaxis: {
             //title: "Recommendations",
             type: 'category',
-            tickmode: 'linear', // show all the categorical values
+            //tickmode: 'linear', // show all the categorical values
 
-            /* Determine the horizontal width based on tick lengths and axis title standoff */
-            automargin: true
+            /* Rather than allowing labels to overflow on the left,
+            * move the y axis rightwards by reducing the chart width and increasing the labels space width */
+            //automargin: true
             //standoff: 30
         },
         title: {
-            text: `How are violations distributed in ${resourceName}?`,
+            text: `<b>How are violations distributed in ${resourceName}?</b>`,
             font: {
                 size: 24
             }

@@ -265,6 +265,7 @@ function generateFolderChartReportInner(folder, folderDiagnostics) {
 			})
 		}, reason => {
 			if (reason) {
+				vscode.window.showErrorMessage(`Could not read directory ${getResourceName(folder.path)}.`)
 				console.error(reason)
 			}
 			reject()
