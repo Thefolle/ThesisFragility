@@ -13,7 +13,6 @@ const { recommendations } = require('./recommendations');
 const chartReporter = require('./ChartReporter')
 
 
-
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -119,10 +118,10 @@ function collectDiagnostics(document) {
 	let language = document.languageId;
 	let diagnostics = []
 
-	if (!isLanguageSupported(language)) return
+	if (!isLanguageSupported(language)) return []
 
 	let fileName = getResourceName(document.fileName)
-	if (!isTestFile(fileName, language)) return
+	if (!isTestFile(fileName, language)) return []
 
 	if (language == 'java') {
 		parseJava(document, diagnostics)
@@ -190,32 +189,97 @@ function generateChartReport(uri, diagnostics) {
 }
 
 function generateFolderChartReport(folder) {
-	vscode.workspace.findFiles(new vscode.RelativePattern(folder.path, "*[tT]est*")).then(uris => {
-
-		let folderDiagnostics = []
-
-		Promise.all(
-			uris
-				.map(uri => {
-					return new Promise((resolve, reject) => {
-						vscode.workspace.openTextDocument(uri).then(textDocument => { // triggers the onDidOpenTextDocument listener
-							let diagnostics = collectDiagnostics(textDocument)
-							folderDiagnostics.push(...diagnostics)
-
-							resolve()
-						}, reason => {
-							reject(reason)
-						})
-					})
-				})
-		).then(_ => {
-			generateChartReport(folder, folderDiagnostics)
-		}).catch(reason => {
-			vscode.window.showErrorMessage(reason)
-		})
+	let folderDiagnostics = []
+	generateFolderChartReportInner(folder, folderDiagnostics).then(_ => {
+		generateChartReport(folder, folderDiagnostics)
+	}).catch(reason => {
+		vscode.window.showErrorMessage(`Could not generate the chart report for ${getResourceName(folder.path)}.`)
+		if (reason) {
+			console.error(reason)
+		}
 	})
 }
 
+/**
+ * Recursive method to scan the subtree of a root folder.
+ * Do not call this method directly
+ * @param {vscode.Uri} folder 
+ */
+function generateFolderChartReportInner(folder, folderDiagnostics) {
+	return new Promise((resolve, reject) => {
+		vscode.workspace.fs.readDirectory(folder).then(dictionary => {
+			Promise.all(
+				/* return a promise for each entry in the folder */
+				dictionary.map((entry, i) => {
+					return new Promise((resolve2, reject2) => {
+						let timeout = (i / 10) * 1000 // the timeout prevents the opening of too many files at a high rate (the OS forbids that)
+
+						setTimeout(_ => {
+							const resourceName = entry[0]
+							const resourceType = entry[1]
+
+							if (resourceType == vscode.FileType.File) {
+								if (!isTestFile(resourceName, resourceName.endsWith('java') ? 'java' : 'javascript')) resolve2()
+
+								let fileUri = vscode.Uri.joinPath(folder, resourceName)
+
+								/* Just collect the diagnostics of the file */
+								vscode.workspace.openTextDocument(fileUri).then(textDocument => { // triggers the onDidOpenTextDocument listener
+
+									let diagnostics = vscode.languages.getDiagnostics(textDocument.uri)
+
+									folderDiagnostics.push(...diagnostics)
+
+									resolve2()
+								}, reason => {
+									vscode.window.showErrorMessage(`Could not open file ${fileUri.path}.`)
+									console.error(reason)
+									reject2()
+								})
+
+							} else if (resourceType == vscode.FileType.Directory) {
+								const newPath = vscode.Uri.joinPath(folder, resourceName)
+								console.log(resourceName)
+								generateFolderChartReportInner(newPath, folderDiagnostics).then(_ => {
+									resolve2()
+								}).catch(reason => {
+									if (reason) {
+										console.error(reason)
+									}
+									reject2()
+								})
+							} else {
+								resolve2()
+							}
+
+						}, timeout)
+					})
+				})
+			).then(_ => {
+				resolve() // when all items in the folder have been diagnosed, the folder is considered passed
+			}).catch(reason => {
+				if (reason) {
+					console.error(reason)
+				}
+				reject()
+			})
+		}, reason => {
+			if (reason) {
+				console.error(reason)
+			}
+			reject()
+		})
+
+	})
+}
+
+/**
+ * A parser for Java code.
+ * Beware: since the parser performs many recursions, the call stack size may be exceeded causing an error.
+ * The reason is that the chosen Java parser produces a concrete syntax tree.
+ * @param {vscode.TextDocument} document 
+ * @param {} diagnostics 
+ */
 function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
 
@@ -454,8 +518,7 @@ function parseJava(document, diagnostics) {
 			}
 
 			/* Recur on inner string */
-			if (literalString.includes("\"")) {
-				//console.log(literalString)
+			if (literalString.split("\"").length > 2) { // if there are at least two apostrofy commas: for instance, "shouldn't" is a string with one apex that should not be recurred on 
 				let firstQuoteIndex = literalString.indexOf("\"") + 1
 				let lastQuoteIndex = literalString.indexOf("\"", firstQuoteIndex + 1)
 				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
@@ -464,10 +527,8 @@ function parseJava(document, diagnostics) {
 				innerNode.StringLiteral[0].image = newImage
 				innerNode.StringLiteral[0].startOffset += firstQuoteIndex + 1
 				innerNode.StringLiteral[0].endOffset -= (literalString.length - lastQuoteIndex + 1)
-				//console.log(innerNode)
 				this.literal(innerNode)
-			} else if (literalString.includes("\'")) {
-				//console.log(literalString)
+			} else if (literalString.split("\'").length > 2) {
 				let firstQuoteIndex = literalString.indexOf("\'") + 1
 				let lastQuoteIndex = literalString.indexOf("\'", firstQuoteIndex + 1)
 				let newImage = literalString.substring(firstQuoteIndex, lastQuoteIndex)
@@ -476,7 +537,6 @@ function parseJava(document, diagnostics) {
 				innerNode.StringLiteral[0].image = newImage
 				innerNode.StringLiteral[0].startOffset += firstQuoteIndex + 1
 				innerNode.StringLiteral[0].endOffset -= (literalString.length - lastQuoteIndex + 1)
-				//console.log(innerNode)
 
 				this.literal(innerNode)
 			}
@@ -735,7 +795,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		methodBody(node, state) {
-			if (!state || !state.isTestCase) {
+			if (!state || !state.isTestCase || isEmptyTestCase(node)) {
 				super.methodBody(node)
 				return
 			}
@@ -872,14 +932,25 @@ function parseJava(document, diagnostics) {
 	}))
 
 
-	Promise.all(promises).then(res =>
-		undefined
-	).catch(err => {
+	Promise.allSettled(promises).then(results => {
+		if (results.some(result => result.status === 'rejected')) {
+			vscode.window.showWarningMessage(`File ${getResourceName(document.fileName)} has been scanned partially, due to some internal bug.`)
+			console.error(results.filter(result => result.status === 'rejected').map(result => result.reason))
+		}
+	}).catch(reason => {
 		/* Probable parsing error */
-		console.error(err)
+		vscode.window.showErrorMessage(`Could not parse file ${getResourceName(document.fileName)}.`)
+		console.error(reason)
 	})
 }
 
+/**
+ * A parser for Javascript code.
+ * Beware: since the parser performs many recursions, the call stack size may be exceeded causing an error.
+ * This should not be a problem here, since the chosen Javascript parser produces an AST
+ * @param {vscode.TextDocument} document 
+ * @param {} diagnostics 
+ */
 function parseJavascript(document, diagnostics) {
 
 	let multiLineNonBlockDiagnostics = []
@@ -1559,6 +1630,15 @@ function hasTags(methodDeclaration) {
 	}
 }
 
+function isEmptyTestCase(methodBody) {
+	if (getChild(methodBody.block).blockStatements) {
+		return false
+	} else {
+		return true
+	}
+
+}
+
 /* node can be either a CallExpression, a MemberExpression or an Identifier */
 function getChain(node, chain) {
 	if (!node) console.log(chain)
@@ -1640,5 +1720,3 @@ module.exports = {
 	activate,
 	deactivate
 }
-
-

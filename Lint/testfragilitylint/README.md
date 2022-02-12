@@ -26,9 +26,11 @@ Each bad practice is linked to a describing tooltip that appears when you hover 
 
 The tooltip informs about what is the actual reason that makes the code a bad practice, along with the good practice that increase robustness thereof.
 
-### Generate a report
+### Generate a chart report
 
-Open the command palette (`Ctrl+Shift+P`) and digit `Generate report` to collect code smells in a file.
+Right click on a file (or folder) to request the generation of a chart report.
+
+This feature requires Internet connection because it leverages a third-party graphing library, Plotly.
 
 ## Requirements
 
