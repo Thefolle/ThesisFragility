@@ -813,19 +813,90 @@ function parseJava(document, diagnostics) {
 	}
 
 	let CommentsVisitor = function () {
-		let matches = document.getText().matchAll('//.*')
-		let comments = []
+		/* Search and formalize single-line comments */
+		let matches = document.getText().matchAll('//.*') // match until the end of line
+		let singleLineComments = []
+
+		/* Get and prepare all matches */
 		for (let match of matches) {
-			if (!["\'", "\"", "\`"].some(apostrofy => match[0].includes(apostrofy))) {
-				comments.push(match)
+			let text = match[0].toLowerCase()
+			let startOffset = match.index
+			let endOffset = startOffset + text.length
+			let lineNumber = document.positionAt(startOffset).line
+			let isOnlyCommentLine = document.offsetAt(new vscode.Position(lineNumber, document.lineAt(lineNumber).firstNonWhitespaceCharacterIndex)) == startOffset
+			let leftTextComment = document.getText(new vscode.Range(new vscode.Position(lineNumber, 0), document.positionAt(startOffset)))
+				.slice(0, startOffset)
+			
+			let numberOfApexes = leftTextComment.split("\"").length - 1 // for instance, in "ehi\"/* ..." is 2
+			let numberOfEscapedApexes = leftTextComment.split("\\\"").length - 1
+			let isInsideString = (numberOfApexes - numberOfEscapedApexes) % 2 == 1
+			
+			if (!isInsideString) {
+				singleLineComments.push({
+					text,
+					startOffset,
+					endOffset,
+					lineNumber,
+					isOnlyCommentLine
+				})
+			}
+			
+		}
+
+		/* Merge successive comments as a single multi-line comment */
+		let multilineComments = []
+		singleLineComments.forEach(comment => {
+			let singleLineCommentAsMultiline = { // promote the single-line comment to a multi-line one
+				text: comment.text,
+				startOffset: comment.startOffset,
+				endOffset: comment.endOffset,
+				startLineNumber: comment.lineNumber,
+				endLineNumber: comment.lineNumber
+			}
+
+			if (multilineComments.length == 0 || !comment.isOnlyCommentLine) {
+				multilineComments.push(singleLineCommentAsMultiline)
+				return
+			}
+
+			let lastMultilineComment = multilineComments[multilineComments.length - 1]
+			if (lastMultilineComment.endLineNumber == comment.lineNumber - 1) {
+				lastMultilineComment.text += comment.text
+				lastMultilineComment.endOffset = comment.endOffset
+				lastMultilineComment.endLineNumber++
+			} else {
+				multilineComments.push(singleLineCommentAsMultiline)
+			}
+		})
+
+		/* Search block comments */
+		let blockComments = []
+		matches = document.getText().matchAll(/\/\*[\s\S]*?\*\//g)
+		
+		for (let match of matches) {
+			let text = match[0].toLowerCase()
+			let startOffset = match.index
+			let endOffset = startOffset + text.length
+			let lineNumber = document.positionAt(startOffset).line
+			let isInsideString = document.getText(new vscode.Range(new vscode.Position(lineNumber, 0), document.positionAt(startOffset)))
+				.slice(0, startOffset).split("\"").length % 2 == 0 
+			
+			if (!isInsideString) {
+				blockComments.push({
+					text,
+					startOffset,
+					endOffset
+				})
 			}
 		}
 
-		const patterns = ['import', 'todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async', '= new', '()']
+		let comments = [...multilineComments, ...blockComments]
+
+		const patterns = ['import', 'todo', 'license', 'copyright', 'function(', '=>', 'const ', 'let ', 'async', '= new', '()', 'private final', 'findelement', '@author', '@version', '@param']
 		comments
-			.filter(comment => !patterns.some(pattern => comment[0].includes(pattern)))
+			.filter(comment => !patterns.some(pattern => comment.text.includes(pattern)))
 			.forEach(comment => {
-				addDiagnostic(document, diagnostics, comment.index, comment.index + comment[0].length, "R.W.21", "Use of a comment to describe the behaviour.")
+				addDiagnostic(document, diagnostics, comment.startOffset, comment.endOffset, "R.W.21", "Use of a comment to describe the behaviour.")
 			})
 	}
 
