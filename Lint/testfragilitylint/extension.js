@@ -1539,9 +1539,9 @@ function parseJavascript(document, diagnostics) {
 	let FixtureMethodsVisitor = walker.make({
 		CallExpression(node, state, c) {
 			if (node.callee.name == 'afterAll' || node.callee.name == 'beforeAll') {
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.12.5", "Usage of setup/tear down method.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.13", "Usage of setup/tear down method.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.17", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.W.12.5", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.W.13", "Usage of setup/tear down method.")
+				addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.W.17", "Usage of setup/tear down method.")
 			}
 
 
@@ -1595,7 +1595,7 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let CommentsVisitor = walker.make({
+	let ExternalLibrariesVisitor = walker.make({
 		VariableDeclaration(node, state, c) {
 			node.declarations.forEach(variableDeclarator => {
 				let chain = []
@@ -1623,29 +1623,70 @@ function parseJavascript(document, diagnostics) {
 		}
 	})
 
-	let ExternalLibrariesVisitor = walker.make({
+	let FixedTimeWaitVisitor = walker.make({
 		CallExpression(node, state, c) {
 			const patterns = ['setTimeout', 'sleep']
 
-			let chain = []
-			getChain(node, chain)
-
-			let diagnosedPattern = patterns.find(pattern => chain.includes(pattern))
-
-			if (!diagnosedPattern) {
-
-				walker.base.CallExpression(node, state, c)
-				return
+			if (node.callee.name) {
+				let diagnosedPattern = patterns.find(pattern => node.callee.name.includes(pattern))
+				if (diagnosedPattern) {
+					addDiagnostic(document, diagnostics, node.callee.start, node.callee.end, "R.D.0", `Use of ${diagnosedPattern}.`)
+				}
 			}
-
-			addDiagnostic(document, diagnostics, node.start, node.end, "R.D.0", `Use of ${diagnosedPattern}.`)
-
 
 			walker.base.CallExpression(node, state, c)
 		}
 	})
 
-	let visitors = [DriverVariableVisitor, GlobalVariablesVisitor, LocatorsVisitor, TestCaseNamesVisitor/* , TestCaseSectionsVisitor */, FixtureMethodsVisitor, TestCaseLengthVisitor, CommentsVisitor, ExternalLibrariesVisitor]
+	let VariablesNameVisitor = walker.make({
+
+		VariableDeclarator(node, state, c) {
+			let identifiers = []
+			if (node.id.type == 'Identifier') { // let a = ...
+				identifiers.push(node.id.name)
+			} else if (node.id.type == 'ObjectPattern') { // const {a, b} = ...
+				node.id.properties.forEach(property => {
+					identifiers.push(property.key.name)
+				})
+			} else {
+				console.error("Unrecognized variable declarator.")
+				super.VariableDeclarator(node, state, c)
+				return
+			}
+
+			identifiers.forEach(identifier => {
+				if (identifier.length < 2 && identifier != 'i') { // need stronger heuristics
+					addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.6", "The variable name is too short.")
+				}
+			})
+
+			walker.base.VariableDeclarator(node, state, c)
+		}
+
+	})
+
+	let TestCaseTagsVisitor = walker.make({
+		CallExpression(node, state, c) {
+			if (node.callee.name != 'it' && node.callee.name != 'test') {
+
+				walker.base.CallExpression(node, null, c)
+				return
+			}
+
+			let concat = []
+			getLiteralsFromConcatenation(node.arguments[0], concat)
+			let testCaseName = concat.join('')
+
+			if (!testCaseName.includes('#')) {
+				addDiagnostic(document, diagnostics, node.arguments[0].start, node.arguments[0].end, "R.W.12.7", "The test case has no recognized tags.")
+			}
+
+			walker.base.CallExpression(node, null, c)
+		}
+	})
+
+	let visitors = [DriverVariableVisitor, GlobalVariablesVisitor, LocatorsVisitor, TestCaseNamesVisitor/* , TestCaseSectionsVisitor */, FixtureMethodsVisitor,
+		TestCaseLengthVisitor, ExternalLibrariesVisitor, FixedTimeWaitVisitor, VariablesNameVisitor, TestCaseTagsVisitor]
 	let promises = visitors.map(visitor => new Promise((resolve, reject) => {
 		try {
 			walker.recursive(root, null, visitor, walker.base)
@@ -1655,11 +1696,15 @@ function parseJavascript(document, diagnostics) {
 		}
 	}))
 
-	Promise.all(promises).then(res =>
-		undefined
-	).catch(err => {
+	Promise.allSettled(promises).then(results => {
+		if (results.some(result => result.status === 'rejected')) {
+			vscode.window.showWarningMessage(`File ${getResourceName(document.fileName)} has been scanned partially, due to some internal bug.`)
+			console.error(results.filter(result => result.status === 'rejected').map(result => result.reason))
+		}
+	}).catch(reason => {
 		/* Probable parsing error */
-		console.error(err)
+		vscode.window.showErrorMessage(`Could not parse file ${getResourceName(document.fileName)}.`)
+		console.error(reason)
 	})
 
 }
@@ -1729,6 +1774,13 @@ function getChain(node, chain) {
 	}
 }
 
+/**
+ * Returns the literal strings in a concatenation
+ * @param {*} node 
+ * @param {*} concat An empty array
+ * @returns A string that is the concatenation of *just* the literals in the concatenations
+ * @example "Hello" + punctuationVariable + " World!" // is evaluated as "Hello World!"
+ */
 function getLiteralsFromConcatenation(node, concat) {
 	if (node.type == 'BinaryExpression') {
 		getLiteralsFromConcatenation(node.left, concat)
