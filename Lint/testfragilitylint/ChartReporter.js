@@ -11,9 +11,7 @@ function getHTMLcontent(resourceName, cleanedData) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Chart Report</title>
-        <script src="https://cdn.plot.ly/plotly-2.8.3.min.js"></script>
-    </head>
-    
+        <script src="https://cdn.plot.ly/plotly-2.9.0.min.js"></script>
     <body>
     
         <div id="chart" style="width: fit-content; height: fit-content;"></div>
@@ -34,53 +32,49 @@ function getHTMLcontent(resourceName, cleanedData) {
 
 function prepareDataAndLayout(resourceName, cleanedData) {
 
+    /* Group data by category, each one with its occurrence */
+
+    let messages = cleanedData.map(row => row.message)
+    let occurrencesByRule = groupBy(messages)
+    occurrencesByRule.sort((occurrence1, occurrence2) => occurrence1.count - occurrence2.count)
+
+    let testFileNames = cleanedData.map(row => row.testFileName)
+    let occurrencesByTestFileName = groupBy(testFileNames)
+    occurrencesByTestFileName.sort((occurrence1, occurrence2) => occurrence1.count - occurrence2.count)
+
     var data = [
         {
             name: 'Violations',
-            y: cleanedData.map(row => {
-                return `${row.message.slice(0, 30)}...`
-
-                /* Code to put line feeds in labels; however, labels may overflow the adjacent ones */
-                //let message = row.message
-                // message = message.trim() // avoids bad behaviours
-                //let length = message.length
-                //let i = 30
-                // while (i < length) {
-                //     let j
-                //     for (j = i; j < length && message.charAt(j) != ' '; j++);
-                //     if (j == length) break
-                //     message = message.substring(0, j) + '<br>' + message.substring(j + 1)
-                //     i += 30
-
-                //     if (i >= 90) {
-                //         message = message.slice(0, 90) + '...'
-                //         break
-                //     }
-                // }
-
-                //return message
-            }),
-            type: 'histogram',
+            x: occurrencesByRule.map(occurrence => occurrence.count),
+            y: occurrencesByRule.map(occurrence => `${occurrence.name.slice(0, 30)}...`),
+            type: 'bar',
             marker: {
                 color: 'violet',
             },
             opacity: 0.60,
+            orientation: 'h',
+
             visible: true // default trace shown
         },
         {
             name: 'Test files',
-            y: cleanedData.map(row => row.testFileName),
-            type: 'histogram',
+            x: occurrencesByTestFileName.map(occurrence => occurrence.count),
+            y: occurrencesByTestFileName.map(occurrence => occurrence.name),
+            type: 'bar',
+            orientation: 'h',
+
             marker: {
                 color: 'violet',
             },
             opacity: 0.60,
+
             visible: false
         }
     ]
 
     var layout = {
         bargap: 0.2,
+
         xaxis: {
             title: "# violations",
             rangemode: 'tozero',
@@ -88,9 +82,8 @@ function prepareDataAndLayout(resourceName, cleanedData) {
             showgrid: true
         },
         yaxis: {
-            //title: "Recommendations",
             type: 'category',
-            //tickmode: 'linear', // show all the categorical values
+            //tickmode: 'linear', // show all the categorical values, but labels overlap when they are too much
 
             /* Rather than allowing labels to overflow on the left,
             * move the y axis rightwards by reducing the chart width and increasing the labels space width */
@@ -131,6 +124,27 @@ function prepareDataAndLayout(resourceName, cleanedData) {
 
     return {data, layout}
 
+}
+
+function groupBy(data) {
+    let sortedMessages = data.sort()
+
+    let occurrences = []
+
+    sortedMessages.forEach(message => {
+        if (occurrences.length == 0) {
+            occurrences.push({ name: message, count: 1 })
+            return
+        }
+
+        if (message == occurrences[occurrences.length - 1].name) {
+            occurrences[occurrences.length - 1].count++
+        } else {
+            occurrences.push({ name: message, count: 1 })
+        }
+    })
+
+    return occurrences
 }
 
 
