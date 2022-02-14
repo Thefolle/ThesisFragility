@@ -176,6 +176,7 @@ function generateChartReport(uri, diagnostics) {
 	})
 
 	let cleanedData = diagnostics.map(diagnostic => {
+		if (!diagnostic.relatedInformation) console.log(diagnostic)
 		const diagnosticPath = diagnostic.relatedInformation[0].location.uri.fsPath
 		return {
 			message: diagnostic.message,
@@ -227,6 +228,7 @@ function generateFolderChartReportInner(folder, folderDiagnostics) {
 								vscode.workspace.openTextDocument(fileUri).then(textDocument => { // triggers the onDidOpenTextDocument listener
 
 									let diagnostics = vscode.languages.getDiagnostics(textDocument.uri)
+									diagnostics = filterDiagnostics(diagnostics)
 
 									folderDiagnostics.push(...diagnostics)
 
@@ -1220,7 +1222,9 @@ function parseJavascript(document, diagnostics) {
 		CallExpression(node, junkState, c) {
 			let chain = []
 			getChain(node, chain)
-			chain = chain.map(ring => ring.toLowerCase())
+			chain = chain
+				.filter(ring => typeof ring === 'string') // array subscripting (for instance array[0]) is not relevant here
+				.map(ring => ring.toLowerCase())
 
 			let state = {}
 			if (chain.length >= 2) {
@@ -1641,12 +1645,21 @@ function parseJavascript(document, diagnostics) {
 	let VariablesNameVisitor = walker.make({
 
 		VariableDeclarator(node, state, c) {
-			let identifiers = []
+
+			let variables = []
 			if (node.id.type == 'Identifier') { // let a = ...
-				identifiers.push(node.id.name)
+				variables.push({
+					identifier: node.id.name,
+					start: node.id.start,
+					end: node.id.end
+				})
 			} else if (node.id.type == 'ObjectPattern') { // const {a, b} = ...
 				node.id.properties.forEach(property => {
-					identifiers.push(property.key.name)
+					variables.push({
+						identifier: property.key.name,
+						start: property.key.start,
+						end: property.key.end
+					})
 				})
 			} else {
 				console.error("Unrecognized variable declarator.")
@@ -1654,9 +1667,10 @@ function parseJavascript(document, diagnostics) {
 				return
 			}
 
-			identifiers.forEach(identifier => {
-				if (identifier.length < 2 && identifier != 'i') { // need stronger heuristics
-					addDiagnostic(document, diagnostics, node.Identifier[0].startOffset, node.Identifier[0].endOffset + 1, "R.W.6", "The variable name is too short.")
+			const commonShortIdentifiers = ['i', 'j', '$', '$$']
+			variables.forEach(variable => {
+				if (variable.identifier.length <= 2 && !commonShortIdentifiers.some(commonShortIdentifier => variable.identifier == commonShortIdentifier)) { // need stronger heuristics
+					addDiagnostic(document, diagnostics, variable.start, variable.end + 1, "R.W.6", "The variable name is too short.")
 				}
 			})
 
@@ -1756,10 +1770,12 @@ function isEmptyTestCase(methodBody) {
 
 }
 
-/* node can be either a CallExpression, a MemberExpression or an Identifier */
+/**
+ * Transforms a tree in an array
+ * @param {*} node can be either a CallExpression, a MemberExpression or an Identifier 
+ * @param {*} chain an empty array that will contain the output
+ */
 function getChain(node, chain) {
-	if (!node) console.log(chain)
-
 	if (node.type == 'MemberExpression') {
 		getChain(node.object, chain)
 		getChain(node.property, chain)
@@ -1838,6 +1854,14 @@ function buildDiagnostic(document, start, end, code, message, specificMessage) {
 	return diagnostic
 }
 
+/**
+ * Filters the diagnostics whose source is not this extension. This is useful when the diagnostics are 
+ * picked from the vscode UI list that may contain issues from other extensions.
+ * @param {vscode.Diagnostic[]} diagnostics 
+ */
+function filterDiagnostics(diagnostics) {
+	return diagnostics.filter(diagnostic => diagnostic.source === 'Fragility linter')
+}
 
 
 module.exports = {
