@@ -47,7 +47,7 @@ function prepareDataAndLayout(resourceName, cleanedData) {
             name: 'Violations',
             x: occurrencesByRule.map(occurrence => occurrence.count),
             y: occurrencesByRule.map(occurrence => `${occurrence.name.slice(0, 30)}...`),
-            type: 'bar',
+            type: 'bar', // an histogram would fit better the target of showing data, but its sorting capabilities are buggy
             marker: {
                 color: 'violet',
             },
@@ -60,7 +60,7 @@ function prepareDataAndLayout(resourceName, cleanedData) {
             name: 'Test files',
             x: occurrencesByTestFileName.map(occurrence => occurrence.count),
             y: occurrencesByTestFileName.map(occurrence => occurrence.name),
-            type: 'bar',
+            type: 'bar', // an histogram would fit better the target of showing data, but its sorting capabilities are buggy
             orientation: 'h',
 
             marker: {
@@ -79,7 +79,8 @@ function prepareDataAndLayout(resourceName, cleanedData) {
             title: "# violations",
             rangemode: 'tozero',
             linewidth: 1,
-            showgrid: true
+            showgrid: true,
+            tickformat: ',d' // useful to mitigate the bug of floating-point labels when the maximum value of the xaxis is 1. This is an inconvenient of using a bar chart rather than an histogram
         },
         yaxis: {
             type: 'category',

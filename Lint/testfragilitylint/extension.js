@@ -1,15 +1,17 @@
 // @ts-nocheck
+
 // The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 
+// Dependencies for Javascript parsing
 const acorn = require('acorn-node');
 const walker = require('acorn-node/walk')
 
+// Dependencies for Java parsing
 const javaParser = require('java-parser')
 
+// Internal modules
 const { recommendations } = require('./recommendations');
-
 const chartReporter = require('./ChartReporter')
 
 
@@ -34,12 +36,14 @@ function activate(context) {
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
 	context.subscriptions.push(collection)
 
-	// TODO: onDidChangeTextDocument, so as to refresh while coding (or also saving)
 	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, collection))
 	context.subscriptions.push(openTextDocumentListener)
 
 	let closeTextDocumentListener = vscode.workspace.onDidCloseTextDocument(document => collection.delete(document.uri))
 	context.subscriptions.push(closeTextDocumentListener)
+
+	let changeTextDocumentListener = vscode.workspace.onDidChangeTextDocument(event => updateDiagnostics(event.document, collection))
+	context.subscriptions.push(changeTextDocumentListener)
 
 	let generateReportCommand = vscode.commands.registerCommand('Generate Report', function () {
 		if (!vscode.window.activeTextEditor) {
@@ -506,7 +510,7 @@ function parseJava(document, diagnostics) {
 					if (literalString.includes('_')) {
 						addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.7")
 					}
-				} else if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
+				} else if (literalString.startsWith('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of id locator mapped as CSS locator.")
 				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || ((literalString.includes('.') && !literalString.endsWith('.')) && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
 					addDiagnostic(document, diagnostics, node.StringLiteral[0].startOffset, node.StringLiteral[0].endOffset + 1, "R.W.3", "Use of CSS locator.")
@@ -1284,20 +1288,35 @@ function parseJavascript(document, diagnostics) {
 		},
 
 		innerDiagnostic(literalString, node, state) {
-			if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of relative XPath.")
-			} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/' && (state && state.calledMethod != 'open')) { // the open method accepts URLs
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.1", "Use of absolute XPath.")
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of absolute XPath.")
-			} else if (state && state.isXpathLocator) {
-				addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3")
-			} else if (!literalString.includes('http')) {
-				if (literalString.includes('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
-					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of id locator mapped as CSS locator.")
-				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || (literalString.includes('.') && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
-					addDiagnostic(document, diagnostics, node.start, node.end, "R.W.3", "Use of CSS locator.")
+			const urlPatterns = ['http']
+			const imagePatterns = ['gif', 'png', 'jpg', 'jpeg', 'bmp']
+			const localDrivePatterns = ['downloads', 'desktop']
+			const driverPatterns = ['chrome', 'driver']
+			const falsePositives = [...urlPatterns, ...imagePatterns, ...localDrivePatterns, ...driverPatterns]
+			if (!state || ((state && state.chain && !state.chain.includes('open')) && !falsePositives.some(falsePositive => literalString.includes(falsePositive)))) { // condition to mask all rules
+				if (literalString.length >= 2 && ((literalString.charAt(0) == '/' && literalString.charAt(1) == '/'))) {
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.3", "Use of relative XPath.")
+				} else if (literalString.length >= 2 && literalString.charAt(0) == '/' && literalString.charAt(1) != '/') { // the open method accepts URLs
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.1", "Use of absolute XPath.")
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.3", "Use of absolute XPath.")
+				} else if (state && state.isXpathLocator) {
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.3")
+				} else if ((state && state.isLinkTextLocator) || literalString.includes('link=')) {
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.19")
+				} else if ((state && state.isIdLocator)) {
 					if (literalString.includes('_')) {
-						addDiagnostic(document, diagnostics, node.start, node.end, "R.W.7")
+						addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.7")
+					}
+				} else if (literalString.startsWith('#')) { // By.css('#el') is equivalent to By.id('el') from the functional point of view, but performance is different
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.3", "Use of id locator mapped as CSS locator.")
+				} else if ((state && state.isCssLocator) || literalString.startsWith("css") || literalString.includes('>') || literalString.includes('btn') || ((literalString.includes('.') && !literalString.endsWith('.')) && literalString.includes('-') && !literalString.includes('.js')) || (literalString.includes('[') && literalString.includes(']') && literalString.includes('=') && literalString.includes('class'))) {
+					addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.3", "Use of CSS locator.")
+					if (literalString.includes('_')) {
+						addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.7")
+					}
+				} else if ((state && state.isTagLocator)) {
+					if (state.chain && !state.chain.some(calledMethod => calledMethod.endsWith('s'))) {
+						addDiagnostic(document, diagnostics, node.start, node.end + 1, "R.W.20", "Use of a tag locator to find only one element.")
 					}
 				}
 			}
