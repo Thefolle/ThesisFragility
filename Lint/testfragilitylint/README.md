@@ -47,7 +47,7 @@ No configuration is needed/available for the tool.
 
 ## Known Issues
 
-No known issues so far. If you find some bug, please report it on the GitHub page of the extension.
+No known issues so far. If you find some bug, please report it on the [GitHub page of the extension](https://github.com/Thefolle/ThesisFragility/issues).
 
 ## Release Notes
 
