@@ -22,16 +22,11 @@ function activate(context) {
 
 	console.log('Extension testfragilitylint is active.');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
 
 	let activateCommand = vscode.commands.registerCommand('Activate', function () {
 		/* Do nothing. A command's callback must be defined even if it is empty. */
 	})
-
 	context.subscriptions.push(activateCommand);
-
 
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
 	context.subscriptions.push(collection)
@@ -98,6 +93,13 @@ function deactivate() {
 	return undefined // must return this value if deallocation is synchronous
 }
 
+/**
+ * 
+ * @param {string} fsPath The path of a resource
+ * @returns The resource name of a resource
+ * @example './folder1/file.js' // returns 'file.js'
+ * @example './folder1' // returns 'folder1'
+ */
 function getResourceName(fsPath) {
 	return fsPath.substring(fsPath.lastIndexOf('\\') + 1)
 }
@@ -164,6 +166,12 @@ function isTestFile(fileName, language) {
 	return false
 }
 
+/**
+ * Generate a 'Report.json' file filled with the provided diagnostics. The report is created in
+ * the same folder as the document.
+ * @param {vscode.TextDocument} document 
+ * @param {vscode.Diagnostic[]} diagnostics 
+ */
 function generateReport(document, diagnostics) {
 	let reportUri = vscode.Uri.joinPath(document.uri, "..", "Report.json")
 	let workspaceEdit = new vscode.WorkspaceEdit()
@@ -175,8 +183,8 @@ function generateReport(document, diagnostics) {
 
 /**
  * 
- * @param {vscode.Uri} uri uri of the overall resource 
- * @param {*} diagnostics 
+ * @param {vscode.Uri} uri Uri of the overall resource
+ * @param {vscode.Diagnostic[]} diagnostics 
  */
 function generateChartReport(uri, diagnostics) {
 	let chartReportPanel = vscode.window.createWebviewPanel('chartReport', 'Chart report', vscode.ViewColumn.Active, {
@@ -197,6 +205,10 @@ function generateChartReport(uri, diagnostics) {
 	chartReportPanel.webview.html = chartReporter.getHTMLcontent(resourceName, cleanedData)
 }
 
+/**
+ * Generate a chart report for a folder. Subdirectories are scanned recursively and included in the report.
+ * @param {vscode.Uri} folder 
+ */
 function generateFolderChartReport(folder) {
 	let folderDiagnostics = []
 	generateFolderChartReportInner(folder, folderDiagnostics).then(_ => {
@@ -211,8 +223,9 @@ function generateFolderChartReport(folder) {
 
 /**
  * Recursive method to scan the subtree of a root folder.
- * Do not call this method directly
  * @param {vscode.Uri} folder 
+ * @inner Do not call this method directly
+ * @see {@link generateFolderChartReport}
  */
 function generateFolderChartReportInner(folder, folderDiagnostics) {
 	return new Promise((resolve, reject) => {
@@ -286,10 +299,9 @@ function generateFolderChartReportInner(folder, folderDiagnostics) {
 
 /**
  * A parser for Java code.
- * Beware: since the parser performs many recursions, the call stack size may be exceeded causing an error.
- * The reason is that the chosen Java parser produces a concrete syntax tree.
  * @param {vscode.TextDocument} document 
- * @param {} diagnostics 
+ * @param {vscode.Diagnostic[]} diagnostics An empty array
+ * @returns The {@link diagnostics} array filled with the violations
  */
 function parseJava(document, diagnostics) {
 	let root = javaParser.parse(document.getText())
@@ -1028,10 +1040,9 @@ function parseJava(document, diagnostics) {
 
 /**
  * A parser for Javascript code.
- * Beware: since the parser performs many recursions, the call stack size may be exceeded causing an error.
- * This should not be a problem here, since the chosen Javascript parser produces an AST
  * @param {vscode.TextDocument} document 
- * @param {} diagnostics 
+ * @param {vscode.Diagnostic[]} diagnostics An empty array
+ * @returns The {@link diagnostics} array filled with the violations
  */
 function parseJavascript(document, diagnostics) {
 
@@ -1796,7 +1807,7 @@ function isEmptyTestCase(methodBody) {
 /**
  * Transforms a tree in an array
  * @param {*} node can be either a CallExpression, a MemberExpression or an Identifier 
- * @param {*} chain an empty array that will contain the output
+ * @param {string[]} chain an empty array that will contain the output
  */
 function getChain(node, chain) {
 	if (node.type == 'MemberExpression') {
@@ -1833,6 +1844,15 @@ function getLiteralsFromConcatenation(node, concat) {
 	}
 }
 
+/**
+ * Adds a recommendation to the list of {@link diagnostics}
+ * @param {vscode.TextDocument} document 
+ * @param {vscode.Diagnostic[]} diagnostics 
+ * @param {number} startOffset 
+ * @param {number} endOffset 
+ * @param {string} recommendationId 
+ * @param {string} specificMessage 
+ */
 function addDiagnostic(document, diagnostics, startOffset, endOffset, recommendationId, specificMessage) {
 	let recommendation = recommendations.find(recommendation => recommendation.id == recommendationId)
 	if (!recommendation) {
@@ -1851,6 +1871,17 @@ function addDiagnostic(document, diagnostics, startOffset, endOffset, recommenda
 	}
 }
 
+/**
+ * Custom constructor for a vscode.Diagnostic
+ * @param {vscode.TextDocument} document 
+ * @param {number} start 
+ * @param {number} end 
+ * @param {string} code 
+ * @param {string} message 
+ * @param {string} specificMessage 
+ * @inner Do not call this method directly
+ * @returns A diagnostic
+ */
 function buildDiagnostic(document, start, end, code, message, specificMessage) {
 	let diagnostic = new vscode.Diagnostic(
 		new vscode.Range(document.positionAt(start), document.positionAt(end)),
