@@ -36,7 +36,11 @@ function activate(context) {
 	let collection = vscode.languages.createDiagnosticCollection('diagnosticCollection');
 	context.subscriptions.push(collection)
 
-	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => updateDiagnostics(document, collection))
+	let openTextDocumentListener = vscode.workspace.onDidOpenTextDocument(document => {
+		if (document.uri.scheme === 'file') { // ignore git files that get opened in background
+			updateDiagnostics(document, collection)
+		}
+	})
 	context.subscriptions.push(openTextDocumentListener)
 
 	let closeTextDocumentListener = vscode.workspace.onDidCloseTextDocument(document => collection.delete(document.uri))
@@ -103,7 +107,7 @@ function getResourceName(fsPath) {
  * @param {vscode.DiagnosticCollection} collection
  */
 function updateDiagnostics(document, collection) {
-	if (document) {
+	if (document && document.uri.scheme === 'file') { // the git counterpart of the document must be ignored
 		let diagnostics = collectDiagnostics(document)
 		console.log(`Diagnostics of ${document.uri} have been collected.`)
 
