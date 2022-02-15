@@ -1,88 +1,56 @@
-# FragilityLint
-
-<!-- This is the README for your extension "testfragilitylint". After writing up a brief description, we recommend including the following sections. -->
+# TestFragilityLint
 
 FragilityLint is a linter for GUI end-to-end test cases, designed to probe bad practices that determine their fragility. Fragility can be defined as the occurrence of breakages in a test suite in response to a modification in the application.
 
+FragilityLint has been built for Selenium test suites, but some recommendations are tool-independent.
+FragilityLint can inspect test files written either in Java or Javascript.
+
 ## Features
-
-<!-- Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow. -->
 
 ### Analyze your test case
 
 FragilityLint inspects test cases and show fragility-related code smells by underlining the interested snippet.
 
-![Probing code smells](file:///C:/Users/Acer/Desktop/Studio/Tesi/Lint/testfragilitylint/images/ProbingCodeSmells.png)
+![Probing code smells](./images/LinterProcessing2.png)
 
 Each bad practice is linked to a describing tooltip that appears when you hover the mouse over it.
 
-![Showing tooltips](<./images/ShowingTooltip.png>)
+![Showing tooltips](<./images/LinterProcessing3.png>)
 
 The tooltip informs about what is the actual reason that makes the code a bad practice, along with the good practice that increase robustness thereof.
 
 ### Generate a chart report
 
-Right click on a file (or folder) to request the generation of a chart report.
+Fragility Lint can collect and show violations in a report in the form of a chart, directly on a preview tab in VSCode.
+Right click on a file (or folder) to request the generation of a chart report for the resource.
+
+The chart can group recommendations by rule or test file, as shown in the two figures beneath:
+
+![Chart report by rule](./images/ChartReportByRule.png)
+![Chart report by test file](./images/ChartReportByTestFile.png)
 
 This feature requires Internet connection because it leverages a third-party graphing library, Plotly.
 
 ## Requirements
 
-<!-- If you have any requirements or dependencies, add a section describing those and how to install and configure them. -->
+### Dependencies
+
+The linter does not require any manual installation. However, it depends upon:
+
+- [java-parser](https://www.npmjs.com/package/java-parser);
+- [acorn](https://www.npmjs.com/package/acorn);
+- [Plotly](https://plotly.com/javascript/getting-started/).
 
 ## Extension Settings
 
-<!-- Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something -->
+No configuration is needed/available for the tool.
 
 ## Known Issues
 
-No known issues so far.
-
-<!-- Calling out known issues can help limit users opening duplicate issues against your extension. -->
+No known issues so far. If you find some bug, please report it on the GitHub page of the extension.
 
 ## Release Notes
-
-<!-- Users appreciate release notes as you update your extension. -->
 
 ### 1.0.0
 
 Initial release of FragilityLint.
-
-<!-- ### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z. -->
-
-<!-- -----------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
- -->
