@@ -1,7 +1,7 @@
 {
   "name": "testfragilitylint",
   "displayName": "TestFragilityLint",
-  "description": "",
+  "description": "TestFragilityLint probes bad practices of graphical tests.",
   "author": {
     "name": "Thefolle"
   },
@@ -11,8 +11,22 @@
     "vscode": "^1.62.0"
   },
   "categories": [
-    "Linters"
+    "Linters",
+    "Testing"
   ],
+  "extensionKind": [
+    "ui"
+  ],
+  "homepage": "https://github.com/Thefolle/ThesisFragility/tree/master/Lint/testfragilitylint",
+  "files": [],
+  "keywords": ["lint", "fragility", "Selenium", "gui test"],
+  "module": "extension.js",
+  "preview": true,
+  "readme": "README.md",
+  "repository": {
+    "url": "https://github.com/Thefolle/ThesisFragility/tree/master/Lint/testfragilitylint"
+  },
+  "icon": "./images/icon.png",
   "activationEvents": [
     "onLanguage:java",
     "onLanguage:javascript"
@@ -28,9 +42,10 @@
       },
       {
         "command": "Generate Chart Report for File",
-        "title": "Generate Chart Report for the Current File",
+        "title": "Generate Cha",
         "category": "Lint",
-        "shortTitle": "File Chart Report"
+        "shortTitle": "File Chart Report",
+        "icon": "./images/icon.png"
       },
       {
         "command": "Generate Chart Report for Folder",
@@ -72,7 +87,6 @@
   },
   "dependencies": {
     "acorn-node": "^2.0.1",
-    "java-parser": "^2.0.0",
-    "selenium-webdriver": "^4.1.0"
+    "java-parser": "^2.0.0"
   }
 }

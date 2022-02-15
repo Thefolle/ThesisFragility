@@ -1,6 +1,8 @@
 # TestFragilityLint
 
-FragilityLint is a linter for GUI end-to-end test cases, designed to probe bad practices that determine their fragility. Fragility can be defined as the occurrence of breakages in a test suite in response to a modification in the application.
+![TestFragilityLint](./images/icon.png)
+
+TestFragilityLint is a linter for GUI end-to-end test cases, designed to probe bad practices that determine their fragility. Fragility can be defined as the occurrence of breakages in a test suite in response to a modification in the application.
 
 FragilityLint has been built for Selenium test suites, but some recommendations are tool-independent.
 FragilityLint can inspect test files written either in Java or Javascript.
