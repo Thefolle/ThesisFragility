@@ -12,6 +12,7 @@ FragilityLint can inspect test files written either in Java or Javascript.
 ### Analyze your test case
 
 FragilityLint inspects test cases and show fragility-related code smells by underlining the interested snippet.
+*Only test cases whose name matches a specific pattern are eligible for linting. Java test files have to contain the word 'test' or 'Test'; Javascript test files have to contain the word 'test' or 'spec'.*
 
 ![Probing code smells](./images/LinterProcessing2.png)
 
@@ -20,6 +21,8 @@ Each bad practice is linked to a describing tooltip that appears when you hover 
 ![Showing tooltips](<./images/LinterProcessing3.png>)
 
 The tooltip informs about what is the actual reason that makes the code a bad practice, along with the good practice that increase robustness thereof.
+
+The linter is based on heuristics, so it may underline something which is good (false positive) or neglect something that is bad (false negative). This factor is difficult to nullify, but it is typically minimized. The first countermeasure against inaccuracy is awareness; the second step is reporting the false positive/negative [to the GitHub issues](https://github.com/Thefolle/ThesisFragility/issues).
 
 ### Generate a chart report
 
@@ -50,6 +53,8 @@ No configuration is needed/available for the tool.
 ## Known Issues
 
 No known issues so far. If you find some bug, please report it on the [GitHub page of the extension](https://github.com/Thefolle/ThesisFragility/issues).
+
+If the issue is a false positive/negative, an image along with a brief description of the context should be enough to solve it.
 
 ## Release Notes
 

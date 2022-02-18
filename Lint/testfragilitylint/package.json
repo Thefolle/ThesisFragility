@@ -24,6 +24,7 @@
   "preview": true,
   "readme": "README.md",
   "repository": {
+    "type": "git",
     "url": "https://github.com/Thefolle/ThesisFragility/tree/master/Lint/testfragilitylint"
   },
   "icon": "./images/icon.png",

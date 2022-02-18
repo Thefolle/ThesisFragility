@@ -111,7 +111,10 @@ function getResourceName(fsPath) {
 function updateDiagnostics(document, collection) {
 	if (document && document.uri.scheme === 'file') { // the git counterpart of the document must be ignored
 		let diagnostics = collectDiagnostics(document)
-		console.log(`Diagnostics of ${document.uri} have been collected.`)
+		if (diagnostics.length > 0) {
+			console.log(`Diagnostics of ${document.uri} have been collected.`)
+		}
+		
 
 		collection.set(document.uri, diagnostics);
 	} else {
@@ -313,8 +316,22 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		methodBody(node, pastState) {
-			let state = { localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
+		methodDeclaration(node) {
+			let state = {}
+			if (isTestCase(node)) {
+				state = { isTestCase: true }
+			}
+
+			super.methodDeclaration(node, state)
+		}
+
+		methodBody(node, state) {
+			if (!state || !state.isTestCase) {
+				super.methodBody(node)
+				return
+			}
+
+			state = { ...state, localVariables: [], firstStatementStartingOffset: getLocation(node.block).endOffset + 1, driverVariable: null }
 			super.methodBody(node, state)
 
 			/* if there is no setup section or the driver variable is not declared locally */
@@ -325,7 +342,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		blockStatements(node, state) {
-			if (!state) {
+			if (!state || !state.isTestCase) {
 				super.blockStatements(node)
 				return // If the state is undefined, the node is outside a method body
 			}
@@ -335,7 +352,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		variableDeclaratorId(node, state) {
-			if (!state) {
+			if (!state || !state.isTestCase) {
 				super.variableDeclaratorId(node)
 				return // If the state is undefined, the node is outside a method body
 			}
@@ -345,7 +362,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefType(node, state) {
-			if (!state) {
+			if (!state || !state.isTestCase) {
 				super.fqnOrRefType(node)
 				return // If the state is undefined, the node is outside a method body
 			}
@@ -359,7 +376,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartFirst(node, state) {
-			if (!state) {
+			if (!state || !state.isTestCase) {
 				super.fqnOrRefTypePartFirst(node)
 				return // If the state is undefined, the node is outside a method body
 			}
@@ -376,7 +393,7 @@ function parseJava(document, diagnostics) {
 		}
 
 		fqnOrRefTypePartRest(node, state) {
-			if (!state) {
+			if (!state || !state.isTestCase) {
 				super.fqnOrRefTypePartRest(node)
 				return // If the state is undefined, the node is outside a method body
 			}
@@ -412,14 +429,14 @@ function parseJava(document, diagnostics) {
 		}
 
 		variableDeclaratorId(node, state) {
-			if (!state || !state.imInBody) {
+			if (!state) {
 				super.variableDeclaratorId(node)
 				return // If the state is undefined, the node is outside a method body
 			}
 
-			if (state && !state.isGlobalDeclaration) {
+			if (state && state.imInBody && !state.isGlobalDeclaration) {
 				state.localVariables.push(node.Identifier[0])
-			} else if (state && state.isGlobalDeclaration) {
+			} else if (state && !state.imInBody && state.isGlobalDeclaration) {
 				this.context.globalVariables.push(node.Identifier[0])
 			}
 
@@ -433,7 +450,7 @@ function parseJava(document, diagnostics) {
 			}
 
 			let property = Object.keys(getChild(node.fqnOrRefTypePartCommon)).find(prop => prop == 'Identifier' || prop == 'Super')
-			let reference = getChild(node.fqnOrRefTypePartCommon)[property][0].image
+			let reference = getChild(node.fqnOrRefTypePartCommon)[property][0]
 
 			/* The recommendation in the flesh */
 			// if the reference was not declared as local variable
@@ -755,17 +772,14 @@ function parseJava(document, diagnostics) {
 			this.validateVisitor();
 		}
 
-		classMemberDeclaration(node) {
-			if (!node.methodDeclaration) { // if the current declaration is not a method
-				super.classMemberDeclaration(node)
-				return
-			}
-
-			let state = { startOffset: getLocation(node.methodDeclaration).startOffset, endOffset: getLocation(node.methodDeclaration).endOffset }
+		methodHeader(node, state) {
+			state.startOffset = getChild(node.methodDeclarator).Identifier[0].startOffset
+			state.endOffset = getChild(node.methodDeclarator).Identifier[0].endOffset + 1
 			super.classMemberDeclaration(node, state)
 		}
 
-		methodDeclaration(node, state) {
+		methodDeclaration(node) {
+			let state = {}
 			state.isFixtureMethod = false
 			super.methodDeclaration(node, state)
 
@@ -1245,7 +1259,7 @@ function parseJavascript(document, diagnostics) {
 				.filter(ring => typeof ring === 'string') // array subscripting (for instance array[0]) is not relevant here
 				.map(ring => ring.toLowerCase())
 
-			let state = {}
+			let state = { chain }
 			if (chain.length >= 2) {
 				if (chain.includes('by')) {
 					if (chain.includes('css')) {
