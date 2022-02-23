@@ -72,3 +72,16 @@ Core -right-|> JavaParser
 
 @enduml
 ```
+
+```plantuml
+@startmindmap
+* Fragility
+** Data fragility
+** Execution plan fragility
+** Time fragility
+** Effort fragility
+** Infrastructural fragility
+** Psychological fragility
+** Synchronization fragility
+@endmindmap
+```
