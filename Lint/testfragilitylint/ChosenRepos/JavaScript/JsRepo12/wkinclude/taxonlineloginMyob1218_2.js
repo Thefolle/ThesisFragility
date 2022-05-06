@@ -15,8 +15,8 @@ describe('tax online MYOB log in', function() {
     var mytitle1 = 'MYOB Account - Sign in';
     var mytitle2 = 'Practice Online';
     var titile3 ='Client Portal';
-    var logemail = 'onlinetax005@gmail.com';
-    var logpw='Myob1234';
+    var logemail = 'test@mail.com';
+    var logpw='pass';
 
 
 
@@ -46,9 +46,9 @@ describe('tax online MYOB log in', function() {
         // https://test.secure.myob.com/oauth2/Account/Login?ReturnUrl=%2foauth2%2faccount%2fauthorize%3fresponse_type%3dcode%26redirect_uri%3dhttp%253A%252F%252Fqa5-clientportalweb.elasticbeanstalk.com%252Fauth%252Fmyob%252Fcallback%26scope%3dpractice.online%2520client.portal%2520mydot.contacts.read%2520AccountantsFramework%26client_id%3dClientPortal&response_type=code&redirect_uri=http%3A%2F%2Fqa5-clientportalweb.elasticbeanstalk.com%2Fauth%2Fmyob%2Fcallback&scope=practice.online%20client.portal%20mydot.contacts.read%20AccountantsFramework&client_id=ClientPortal
         browser.driver.sleep(3000);
         browser.driver.findElement(By.id("Username")).clear();
-        browser.driver.findElement(By.id("Username")).sendKeys("cynthia.ji@myob.com");
+        browser.driver.findElement(By.id("Username")).sendKeys("test@mail.com");
         browser.driver.findElement(By.id("Password")).clear();
-        browser.driver.findElement(By.id("Password")).sendKeys("Myob1234");
+        browser.driver.findElement(By.id("Password")).sendKeys("pass");
         browser.driver.findElement(By.id("submit")).click();
 
         //expect(this.isTrue(true));

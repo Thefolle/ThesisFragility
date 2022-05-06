@@ -14,8 +14,8 @@ chai.use(chaiAsPromised);
 var expect = chai.expect;
 
 var myrul ='';
-var lname='cynthia.ji@myob.com';
-var lpw='Myob1234';
+var lname='test@mail.com';
+var lpw='pass';
 var mytitle='Client Portal';
 
  this.Given(/^I am on the login page 'http:\/\/qa(\d+)\-clientportalweb\.elasticbeanstalk\.com\/'$/, function(myurl, next) {
@@ -33,7 +33,7 @@ var mytitle='Client Portal';
      element(by.id('Username')).sendKeys(lname);
 
      element(By.id("Password")).clear();
-     element(By.id("Password")).sendKeys("Myob1234");
+     element(By.id("Password")).sendKeys("pass");
      element(By.id("submit")).click();
 
 
@@ -66,9 +66,9 @@ var mytitle='Client Portal';
  driver.findElement(By.cssSelector("button.btn.btn-login")).click();
  // ERROR: Caught exception [Error: locator strategy either id or name must be specified explicitly.]
  driver.findElement(By.id("Username")).clear();
- driver.findElement(By.id("Username")).sendKeys("cynthia.ji@myob.com");
+ driver.findElement(By.id("Username")).sendKeys("test@mail.com");
  driver.findElement(By.id("Password")).clear();
- driver.findElement(By.id("Password")).sendKeys("Myob1234");
+ driver.findElement(By.id("Password")).sendKeys("pass");
  driver.findElement(By.id("submit")).click();
  driver.findElement(By.cssSelector("a.pull-left")).click();
  driver.findElement(By.linkText("Documents")).click();

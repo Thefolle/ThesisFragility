@@ -15,7 +15,7 @@ describe('tax online Google log in and Browsing', function() {
     //http://qa5-clientportalweb.elasticbeanstalk.com/tasks
     var titile1 ='MYOB Account - Sign in';
     var title2 = 'Practice Online';
-    var myemail='onlinetax006@gmail.com';
+    var myemail='test@mail.com';
 
 
 
@@ -30,7 +30,7 @@ describe('tax online Google log in and Browsing', function() {
         browser.driver.findElement(By.id('Username')).clear();
         browser.driver.findElement(By.id('Username')).sendKeys(myemail);
         browser.driver.findElement(By.id('Password')).clear();
-        browser.driver.findElement(By.id('Password')).sendKeys('Myob1234');
+        browser.driver.findElement(By.id('Password')).sendKeys('pass');
         //String MYOB Account - Sign in = browser.driver.getTitle();
 
 

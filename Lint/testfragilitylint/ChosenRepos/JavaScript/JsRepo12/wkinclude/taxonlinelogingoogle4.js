@@ -26,9 +26,9 @@ describe('tax online Google log in and Browsing', function() {
 
         browser.driver.get(url1 + '/oauth2/Account/Login?ReturnUrl=%2foauth2%2faccount%2fauthorize%3fresponse_type%3dcode%26redirect_uri%3dhttp%253A%252F%252Fqa5.addevcloudsites.myob.com%252Fauth%252Fmyob%252Fcallback%26scope%3dpractice.online%2520client.portal%2520mydot.contacts.read%2520mydot.assets.read%2520Assets%2520la.global%2520CompanyFile%2520AccountantsFramework%26client_id%3dPracticeOnline&response_type=code&redirect_uri=http%3A%2F%2Fqa5.addevcloudsites.myob.com%2Fauth%2Fmyob%2Fcallback&scope=practice.online%20client.portal%20mydot.contacts.read%20mydot.assets.read%20Assets%20la.global%20CompanyFile%20AccountantsFramework&client_id=PracticeOnline');
         browser.driver.findElement(By.id('Username')).clear();
-        browser.driver.findElement(By.id('Username')).sendKeys('onlinetax005@gmail.com');
+        browser.driver.findElement(By.id('Username')).sendKeys('test@mail.com');
         browser.driver.findElement(By.id('Password')).clear();
-        browser.driver.findElement(By.id('Password')).sendKeys('Myob1234');
+        browser.driver.findElement(By.id('Password')).sendKeys('pass');
         //String MYOB Account - Sign in = browser.driver.getTitle();
 
 

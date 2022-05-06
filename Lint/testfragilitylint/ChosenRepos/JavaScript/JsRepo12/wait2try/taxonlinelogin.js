@@ -40,7 +40,7 @@ describe('tax online log in', function() {
     it('should allow cynthia login', function(){
 
         loginBtn.click();
-        loginas('cynthia.ji@myob.com','Myob1234');
+        loginas('test@mail.com','pass');
         submitBtn.click();
 
     });
@@ -51,7 +51,7 @@ describe('tax online log in', function() {
         it('should allow cynthia login', function(){
 
             loginBtn.click();
-            loginas('cynthia.ji@myob.com','Myob1234');
+            loginas('test@mail.com','pass');
             submitBtn.click();
 
         },10000);
@@ -95,8 +95,8 @@ describe('tax online log in', function() {
  selenium.click("css=button.btn.btn-login");
  selenium.waitForPageToLoad("30000");
  selenium.click("LOCATOR_DETECTION_FAILED");
- selenium.type("id=Username", "cynthia.ji@myob.com");
- selenium.type("id=Password", "Myob1234");
+ selenium.type("id=Username", "test@mail.com");
+ selenium.type("id=Password", "pass");
  selenium.click("id=submit");
  selenium.waitForPageToLoad("30000");
  selenium.click("css=a.pull-left");

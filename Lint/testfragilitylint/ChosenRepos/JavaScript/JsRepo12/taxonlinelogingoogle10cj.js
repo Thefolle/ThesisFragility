@@ -28,9 +28,9 @@ describe('tax online', function() {
         browser.driver.manage().window().maximize();
         browser.driver.get(url2);
         browser.driver.findElement(By.id('Username')).clear();
-        browser.driver.findElement(By.id('Username')).sendKeys('onlinetax006@gmail.com');
+        browser.driver.findElement(By.id('Username')).sendKeys('test@mail.com');
         browser.driver.findElement(By.id('Password')).clear();
-        browser.driver.findElement(By.id('Password')).sendKeys('Myob1234');
+        browser.driver.findElement(By.id('Password')).sendKeys('pass');
         //String MYOB Account - Sign in = browser.driver.getTitle();
         browser.driver.sleep(3000);
         expect(browser.driver.getTitle()).toEqual(titile1);
