@@ -82,6 +82,7 @@ Core -right-|> JavaParser
 ** Effort fragility
 ** Infrastructural fragility
 ** Psychological fragility
+** Cognitive fragility
 ** Synchronization fragility
 @endmindmap
 ```
